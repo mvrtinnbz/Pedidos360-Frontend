@@ -1,28 +1,28 @@
 import { Routes } from '@angular/router';
-import { MsalGuard } from '@azure/msal-angular';
 
 export const routes: Routes = [
-
+  {
+    path: '',
+    loadComponent: () =>
+      import('./pages/home').then((m) => m.Home)
+  },
+  {
+    path: 'productos',
+    loadComponent: () =>
+      import('./pages/productos').then((m) => m.Productos)
+  },
+  {
+    path: 'carrito',
+    loadComponent: () =>
+      import('./pages/carrito').then((m) => m.Carrito)
+  },
   {
     path: 'login',
     loadComponent: () =>
-      import('./login/login').then(
-        (m) => m.Login
-      )
+      import('./pages/login').then((m) => m.Login)
   },
-
-  {
-    path: '',
-    canActivate: [MsalGuard],
-    loadComponent: () =>
-      import('./home/home').then(
-        (m) => m.Home
-      )
-  },
-
   {
     path: '**',
     redirectTo: ''
   }
-
 ];
