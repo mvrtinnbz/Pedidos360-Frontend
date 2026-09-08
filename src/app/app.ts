@@ -19,10 +19,18 @@ export class App implements OnInit {
       next: (result) => {
         if (result) {
           console.log('Login exitoso:', result);
+
+          this.msalService.instance.setActiveAccount(
+            result.account
+          );
         }
       },
+
       error: (error) => {
-        console.error('Error de autenticación MSAL:', error);
+        console.error(
+          'Error de autenticación MSAL:',
+          error
+        );
       }
     });
   }
