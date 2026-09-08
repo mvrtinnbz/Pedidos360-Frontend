@@ -1,82 +1,176 @@
-import { Component, inject } from '@angular/core';
-import { CurrencyPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { CartService } from '../services/cart.spec';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { MsalService } from '@azure/msal-angular';
 
 @Component({
   selector: 'app-carrito',
-  imports: [CurrencyPipe, RouterLink],
+  standalone: true,
+  imports: [CommonModule],
   template: `
-    <div class="page-container">
-      <div class="page-header">
-        <h1>Tu Carrito de Compras</h1>
-        <p>Revisa los artículos seleccionados antes de procesar la orden.</p>
-      </div>
+    <div class="cart-container">
+      <h2>Tu Carrito de Compras</h2>
+      <p class="subtitle">Revisa los artículos seleccionados antes de procesar la orden.</p>
 
-      @if (cartService.items().length > 0) {
-        <div class="cart-layout">
-          <div class="cart-items-list">
-            @for (item of cartService.items(); track item.producto.id) {
-              <div class="cart-item-card">
-                <div class="cart-item-icon">{{ item.producto.imagen }}</div>
-                
-                <div class="cart-item-details">
-                  <span class="category-badge">{{ item.producto.categoria }}</span>
-                  <h4>{{ item.producto.nombre }}</h4>
-                  <p class="unit-price">{{ item.producto.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }} c/u</p>
-                </div>
-
-                <div class="quantity-controls">
-                  <button (click)="cartService.cambiarCantidad(item.producto.id, -1)">-</button>
-                  <span>{{ item.cantidad }}</span>
-                  <button (click)="cartService.cambiarCantidad(item.producto.id, 1)">+</button>
-                </div>
-
-                <div class="cart-item-subtotal">
-                  <p>{{ (item.producto.precio * item.cantidad) | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</p>
-                  <button class="btn-delete" (click)="cartService.eliminar(item.producto.id)">Quitar</button>
-                </div>
+      <div class="cart-layout">
+        <div class="cart-items">
+          @for (item of items; track item.id) {
+            <div class="cart-item-card">
+              <div class="item-img-placeholder"></div>
+              <div class="item-info">
+                <h3>{{ item.nombre }}</h3>
+                <p class="item-price">\${{ item.precio }}</p>
               </div>
-            }
+
+              <div class="quantity-controls">
+                <button (click)="disminuirCantidad(item)">-</button>
+                <span>{{ item.cantidad }}</span>
+                <button (click)="aumentarCantidad(item)">+</button>
+              </div>
+
+              <button class="btn-remove" (click)="eliminarItem(item.id)">Quitar</button>
+            </div>
+          } @empty {
+            <div class="empty-cart">
+              <p>El carrito está vacío.</p>
+            </div>
+          }
+        </div>
+
+        <div class="cart-summary-card">
+          <h3>Resumen de la Orden</h3>
+          
+          <div class="summary-row">
+            <span>Subtotal ({{ items.length }} items)</span>
+            <span>\${{ obtenerSubtotal() }}</span>
+          </div>
+          
+          <div class="summary-row">
+            <span>Envío estimado</span>
+            <span class="text-success">Gratis</span>
           </div>
 
-          <div class="cart-summary-card">
-            <h3>Resumen de la Orden</h3>
-            <div class="summary-row">
-              <span>Subtotal ({{ cartService.cantidadTotal() }} items)</span>
-              <span>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</span>
-            </div>
-            <div class="summary-row">
-              <span>Envío estimado</span>
-              <span class="free-shipping">Gratis</span>
-            </div>
-            <hr class="summary-divider" />
-            <div class="summary-row total-row">
-              <span>Total</span>
-              <span>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</span>
-            </div>
+          <hr />
 
-            <button class="btn-primary btn-checkout" (click)="procesarOrden()">
-              Procesar Pedido
-            </button>
+          <div class="summary-row total-row">
+            <strong>Total</strong>
+            <strong>\${{ obtenerSubtotal() }}</strong>
           </div>
+
+          <button class="btn-checkout" (click)="procesarPedido()">
+            Procesar Pedido
+          </button>
         </div>
-      } @else {
-        <div class="empty-cart-card">
-          <div class="empty-icon">🛒</div>
-          <h2>Tu carrito está vacío</h2>
-          <p>Explora nuestro catálogo para añadir indumentaria deportiva.</p>
-          <a routerLink="/productos" class="btn-primary">Ver Productos</a>
-        </div>
-      }
+      </div>
     </div>
+
+    <!-- Modal 1: Requerir Inicio de Sesión -->
+    @if (mostrarModalLogin) {
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-icon">🔒</div>
+          <h3>Inicio de Sesión Requerido</h3>
+          <p>
+            Para continuar con el proceso de pago y completar tu compra, necesitas iniciar sesión con tu cuenta.
+          </p>
+          <div class="modal-actions">
+            <button class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
+            <button class="btn-primary" (click)="iniciarSesionYContinuar()">Iniciar Sesión</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal 2: Confirmación de Pago Exitoso -->
+    @if (mostrarModalExito) {
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-icon text-success">✅</div>
+          <p>Procediendo al pago del pedido.</p>
+          <div class="modal-actions modal-actions-single">
+            <button class="btn-primary" (click)="cerrarModalExito()">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    }
   `
 })
-export class Carrito {
-  cartService = inject(CartService);
+export class Carrito implements OnInit {
+  private msalService = inject(MsalService);
+  private cdr = inject(ChangeDetectorRef);
 
-  procesarOrden(): void {
-    alert('Orden procesada con éxito. (Mock)');
-    this.cartService.limpiar();
+  isLoggedIn = false;
+  mostrarModalLogin = false;
+  mostrarModalExito = false;
+
+  items = [
+    { id: 1, nombre: 'Producto Ejemplo 1', precio: 15000, cantidad: 1 },
+    { id: 2, nombre: 'Producto Ejemplo 2', precio: 28000, cantidad: 1 }
+  ];
+
+  ngOnInit(): void {
+    this.verificarEstadoSesion();
+  }
+
+  verificarEstadoSesion(): void {
+    const activeAccount = this.msalService.instance.getActiveAccount();
+    const allAccounts = this.msalService.instance.getAllAccounts();
+    this.isLoggedIn = !!activeAccount || allAccounts.length > 0;
+    this.cdr.detectChanges();
+  }
+
+  procesarPedido(): void {
+    this.verificarEstadoSesion();
+
+    if (!this.isLoggedIn) {
+      this.mostrarModalLogin = true;
+      return;
+    }
+
+    this.ejecutarPago();
+  }
+
+  iniciarSesionYContinuar(): void {
+    this.mostrarModalLogin = false;
+
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.includes('msal')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+
+    this.msalService.loginRedirect({
+      scopes: ['user.read', 'openid', 'profile']
+    });
+  }
+
+  cerrarModal(): void {
+    this.mostrarModalLogin = false;
+  }
+
+  ejecutarPago(): void {
+    this.mostrarModalExito = true;
+  }
+
+  cerrarModalExito(): void {
+    this.mostrarModalExito = false;
+  }
+
+  obtenerSubtotal(): number {
+    return this.items.reduce((total, i) => total + (i.precio * i.cantidad), 0);
+  }
+
+  aumentarCantidad(item: any): void {
+    item.cantidad++;
+  }
+
+  disminuirCantidad(item: any): void {
+    if (item.cantidad > 1) {
+      item.cantidad--;
+    }
+  }
+
+  eliminarItem(id: number): void {
+    this.items = this.items.filter(i => i.id !== id);
   }
 }

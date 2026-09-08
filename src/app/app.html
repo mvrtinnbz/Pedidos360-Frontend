@@ -1,1 +1,8 @@
+@if (mensajeAlerta) {
+  <div class="toast-notification" [ngClass]="tipoAlerta === 'success' ? 'toast-success' : 'toast-info'">
+    <span>{{ tipoAlerta === 'success' ? '✅' : 'ℹ️' }}</span>
+    <span>{{ mensajeAlerta }}</span>
+  </div>
+}
+
 <router-outlet></router-outlet>
