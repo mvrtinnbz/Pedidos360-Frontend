@@ -9,8 +9,10 @@ import { MsalService } from '@azure/msal-angular';
   imports: [CommonModule],
   template: `
     <div class="cart-container">
-      <h2>Tu Carrito de Compras</h2>
-      <p class="subtitle">Revisa los artículos seleccionados antes de procesar la orden.</p>
+      <div class="page-header">
+        <h1>Tu Carrito de Compras</h1>
+        <p class="subtitle">Revisa los artículos seleccionados antes de procesar la orden.</p>
+      </div>
 
       <div class="cart-layout">
         <div class="cart-items">

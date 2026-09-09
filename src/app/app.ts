@@ -19,7 +19,7 @@ import { AuthService } from './services/auth.service';
 
     <header class="navbar">
       <div class="nav-container">
-        <a routerLink="/" class="nav-logo">Pedidos360</a>
+        <a routerLink="/" class="nav-logo">FullSport360</a>
         <nav class="nav-links">
           <a routerLink="/productos" class="nav-link">Productos</a>
           <a routerLink="/carrito" class="nav-link">Carrito</a>

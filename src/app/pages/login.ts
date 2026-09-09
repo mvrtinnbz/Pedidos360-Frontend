@@ -10,13 +10,12 @@ import { AuthService } from '../services/auth.service';
     <div class="login-wrapper">
       <div class="login-card">
         <div class="login-header">
-          <span class="brand-badge">🔑 Acceso Seguro</span>
-          <h2>Acceso a Pedidos360</h2>
+          <h2>Acceso a FullSport360</h2>
           <p class="subtitle">
             @if (authService.isLoggedIn()) {
               Tienes una sesión activa en la aplicación.
             } @else {
-              Inicia sesión con tu cuenta corporativa para explorar el catálogo y gestionar tus órdenes.
+              Inicia sesión con tu cuenta Microsoft para explorar el catálogo y gestionar tus órdenes.
             }
           </p>
         </div>
@@ -41,9 +40,6 @@ import { AuthService } from '../services/auth.service';
           }
         </div>
 
-        <div class="login-footer">
-          <p>🔒 Autenticación protegida por <strong>Microsoft Entra ID</strong></p>
-        </div>
       </div>
     </div>
   `

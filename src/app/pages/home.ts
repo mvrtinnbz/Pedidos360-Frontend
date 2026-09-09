@@ -10,10 +10,10 @@ import { MsalService } from '@azure/msal-angular';
     <div class="home-container">
       <!-- Hero Banner -->
       <section class="hero-card">
-        <span class="badge">Plataforma de Gestión</span>
-        <h1 class="hero-title">Gestión de Pedidos en Tiempo Real</h1>
+        <span class="badge">Todo deporte. Un solo lugar.</span>
+        <h1 class="hero-title">Gestión de Artículos Deportivos</h1>
         <p class="hero-subtitle">
-          Bienvenido a <strong>Pedidos360</strong>. Explora nuestro catálogo de productos, administra tu carrito de compras y procesa órdenes de forma ágil y segura.
+          Bienvenido a <strong>FullSport360</strong>. Explora nuestro catálogo de productos, administra tu carrito de compras y procesa órdenes de forma ágil y segura.
         </p>
         
         <div class="hero-actions">

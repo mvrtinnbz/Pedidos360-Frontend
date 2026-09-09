@@ -8,8 +8,8 @@ import { CartService, Producto } from '../services/cart.spec';
   template: `
     <div class="page-container">
       <div class="page-header">
-        <h1>Catálogo de Indumentaria Deportiva</h1>
-        <p>Equípate con la mejor indumentaria para tu entrenamiento.</p>
+        <h1>Catálogo de Artículos Deportivos</h1>
+        <p>Equípate con lo mejor. Indumentaria y accesorios para llevar tu entrenamiento al siguiente nivel.</p>
       </div>
 
       <div class="product-grid">
