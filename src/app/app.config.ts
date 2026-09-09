@@ -1,4 +1,5 @@
 import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { environment } from '../environments/environment';
 import {
   provideHttpClient,
   withInterceptorsFromDi,
@@ -39,8 +40,8 @@ export function MSALInstanceFactory(): IPublicClientApplication {
       clientId: 'd0261291-fbfe-40fb-b1b0-fae49a04f31f',
       authority:
         'https://login.microsoftonline.com/0844a9ad-f458-47d0-8036-0f2080309ddc',
-      redirectUri: 'http://localhost:4200',
-      postLogoutRedirectUri: 'http://localhost:4200'
+      redirectUri: environment.frontendUrl,
+      postLogoutRedirectUri: environment.frontendUrl
     },
 
     cache: {
@@ -78,8 +79,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap =
     new Map<string, Array<string>>();
 
-  protectedResourceMap.set(
-    'http://localhost:8080/api/',
+    protectedResourceMap.set(
+    environment.apiUrl + '/api/',
     [
       'api://9415422a-7394-44ca-a7fb-911e767844a8/access_as_user'
     ]
