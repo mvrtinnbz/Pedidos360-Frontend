@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MsalService } from '@azure/msal-angular';
 
 @Component({
   selector: 'app-home',
+  standalone: true,
   imports: [RouterLink],
   template: `
     <div class="home-container">
@@ -40,10 +42,32 @@ import { RouterLink } from '@angular/router';
           <div class="card-icon">🔐</div>
           <h3>Seguridad y Sesión</h3>
           <p>Accede al portal de autenticación mediante Microsoft Entra ID de forma rápida y segura.</p>
-          <a routerLink="/login" class="card-link">Ir a inicio de sesión &rarr;</a>
+          <a routerLink="/login" class="card-link">
+            @if (isLoggedIn) {
+              Ir a mi perfil &rarr;
+            } @else {
+              Ir a inicio de sesión &rarr;
+            }
+          </a>
         </div>
       </section>
     </div>
   `
 })
-export class Home {}
+export class Home implements OnInit {
+  private msalService = inject(MsalService);
+  private cdr = inject(ChangeDetectorRef);
+
+  isLoggedIn = false;
+
+  ngOnInit(): void {
+    this.verificarEstadoSesion();
+  }
+
+  verificarEstadoSesion(): void {
+    const activeAccount = this.msalService.instance.getActiveAccount();
+    const allAccounts = this.msalService.instance.getAllAccounts();
+    this.isLoggedIn = !!activeAccount || allAccounts.length > 0;
+    this.cdr.detectChanges();
+  }
+}

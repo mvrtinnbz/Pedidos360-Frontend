@@ -825,10 +825,6 @@ body {
   font-size: 0.88rem !important;
 }
 
-/* ==============================
-   RESPONSIVE
-   ============================== */
-
 @media (max-width: 768px) {
   .cart-layout {
     grid-template-columns: 1fr;

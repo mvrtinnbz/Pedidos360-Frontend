@@ -1,8 +1,10 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { MsalService } from '@azure/msal-angular';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
+  standalone: true,
   imports: [],
   template: `
     <div class="login-wrapper">
@@ -11,7 +13,7 @@ import { MsalService } from '@azure/msal-angular';
           <span class="brand-badge">🔑 Acceso Seguro</span>
           <h2>Acceso a Pedidos360</h2>
           <p class="subtitle">
-            @if (isLoggedIn) {
+            @if (authService.isLoggedIn()) {
               Tienes una sesión activa en la aplicación.
             } @else {
               Inicia sesión con tu cuenta corporativa para explorar el catálogo y gestionar tus órdenes.
@@ -20,7 +22,7 @@ import { MsalService } from '@azure/msal-angular';
         </div>
 
         <div class="login-body">
-          @if (!isLoggedIn) {
+          @if (!authService.isLoggedIn()) {
             <!-- Muestra el botón de Iniciar Sesión solo si NO hay usuario -->
             <button class="btn-microsoft-large" (click)="iniciarSesion()">
               <svg width="22" height="22" viewBox="0 0 23 23" fill="none">
@@ -47,8 +49,7 @@ import { MsalService } from '@azure/msal-angular';
   `
 })
 export class Login implements OnInit {
-  isLoggedIn = false;
-
+  public authService = inject(AuthService);
   private msalService = inject(MsalService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -74,9 +75,7 @@ export class Login implements OnInit {
       this.msalService.instance.setActiveAccount(allAccounts[0]);
     }
 
-    this.isLoggedIn = !!this.msalService.instance.getActiveAccount() || allAccounts.length > 0;
-    
-    // Forzamos a Angular a actualizar el HTML inmediatamente
+    this.authService.actualizarEstado();
     this.cdr.detectChanges();
   }
 
@@ -91,9 +90,10 @@ export class Login implements OnInit {
     this.msalService.instance.setActiveAccount(null);
     sessionStorage.clear();
     localStorage.clear();
-    this.isLoggedIn = false;
-    
-    // Forzamos la actualización de la vista tras cerrar sesión
+
+    // Actualiza estado y dispara la alerta flotante en tiempo real
+    this.authService.actualizarEstado();
+    this.authService.mostrarNotificacion('La sesión se ha cerrado correctamente.', 'info');
     this.cdr.detectChanges();
   }
 }
