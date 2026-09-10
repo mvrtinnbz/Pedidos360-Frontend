@@ -17,7 +17,15 @@ import { CarritoService } from '../services/carrito.service';
         <div class="cart-items">
           @for (item of cartService.items(); track item.producto.id) {
             <div class="cart-item-card">
-              <img [src]="item.producto.imagen" class="item-img" alt="{{ item.producto.nombre }}" />
+              
+              <!-- RUTA BASADA EN EL ID DEL PRODUCTO DESDE PUBLIC -->
+              <img 
+                [src]="'/' + item.producto.id + '.jpg'" 
+                class="item-img" 
+                [alt]="item.producto.nombre" 
+                (error)="manejarErrorImagen($event)"
+              />
+
               <div class="item-info">
                 <h3>{{ item.producto.nombre }}</h3>
                 <p class="item-price">{{ item.producto.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</p>
@@ -155,6 +163,12 @@ export class Carrito {
       if (key.includes('msal')) sessionStorage.removeItem(key);
     }
     this.msalService.loginRedirect({ scopes: ['user.read', 'openid', 'profile'] });
+  }
+
+  // Manejo de errores si la imagen basada en el ID no existe
+  manejarErrorImagen(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.src = '/placeholder-deportivo.jpg';
   }
 
   cerrarModal(): void { this.mostrarModalLogin = false; }
