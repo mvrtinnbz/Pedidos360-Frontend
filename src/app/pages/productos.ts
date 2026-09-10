@@ -20,8 +20,8 @@ import { ProductoService, Producto } from '../services/producto.service';
             <div class="product-image">
               <!-- Se construye la ruta con '/' (que apunta a public) + el nombre exacto + .jpg -->
               <img 
-                [src]="'/' + prod.nombre + '.jpg'" 
-                [alt]="prod.nombre" 
+                [src]="'/' + prod.id + '.jpg'" 
+                [alt]="prod.id" 
                 loading="lazy" 
                 (error)="manejarErrorImagen($event)"
               >
