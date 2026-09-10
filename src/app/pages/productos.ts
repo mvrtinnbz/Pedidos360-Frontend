@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
 
@@ -15,7 +16,7 @@ import { ProductoService, Producto } from '../services/producto.service';
 
       <div class="product-grid">
         @for (prod of productos(); track prod.id) {
-          <div class="product-card">
+          <div class="product-card" (click)="verDetalle(prod.id)">
             
             <div class="product-image">
               <img 
@@ -30,7 +31,7 @@ import { ProductoService, Producto } from '../services/producto.service';
               <h3>{{ prod.nombre }}</h3>
               <p class="product-desc">{{ prod.descripcion }}</p>
               <p class="product-price">{{ prod.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</p>
-              <button class="btn-primary" (click)="agregar(prod)">
+              <button class="btn-primary" (click)="agregar(prod); $event.stopPropagation()">
                 Agregar al Carrito
               </button>
             </div>
@@ -69,6 +70,7 @@ import { ProductoService, Producto } from '../services/producto.service';
       flex-direction: column;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
     }
 
     .product-card:hover {
@@ -144,6 +146,7 @@ import { ProductoService, Producto } from '../services/producto.service';
 export class Productos implements OnInit {
   private cartService = inject(CartService);
   private productoService = inject(ProductoService);
+  private router = inject(Router);
 
   productos = signal<Producto[]>([]);
 
@@ -156,6 +159,10 @@ export class Productos implements OnInit {
 
   agregar(producto: Producto): void {
     this.cartService.agregar(producto as any);
+  }
+
+  verDetalle(id: number): void {
+    this.router.navigate(['/productos', id]);
   }
 
   manejarErrorImagen(event: Event): void {
