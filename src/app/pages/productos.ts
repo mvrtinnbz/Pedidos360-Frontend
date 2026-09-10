@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CurrencyPipe } from '@angular/common';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
@@ -14,7 +14,7 @@ import { ProductoService, Producto } from '../services/producto.service';
       </div>
 
       <div class="product-grid">
-        @for (prod of productos; track prod.id) {
+        @for (prod of productos(); track prod.id) {
           <div class="product-card">
             <div class="product-info">
               <h3>{{ prod.nombre }}</h3>
@@ -36,11 +36,11 @@ export class Productos implements OnInit {
   private cartService = inject(CartService);
   private productoService = inject(ProductoService);
 
-  productos: Producto[] = [];
+  productos = signal<Producto[]>([]);
 
   ngOnInit(): void {
     this.productoService.getAll().subscribe({
-      next: (data) => this.productos = data,
+      next: (data) => this.productos.set(data),
       error: (err) => console.error('Error cargando productos:', err)
     });
   }
