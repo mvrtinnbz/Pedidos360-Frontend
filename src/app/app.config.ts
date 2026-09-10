@@ -80,7 +80,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
     new Map<string, Array<string>>();
 
   protectedResourceMap.set(
-    environment.apiUrl + '/api/',
+    environment.apiUrl + '/api/*',
     [
       'api://9415422a-7394-44ca-a7fb-911e767844a8/access_as_user'
     ]
