@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { MsalService } from '@azure/msal-angular';
+import { CartService } from '../services/cart.spec';
+import { CarritoService } from '../services/carrito.service';
 
 @Component({
   selector: 'app-carrito',
@@ -14,21 +15,21 @@ import { MsalService } from '@azure/msal-angular';
 
       <div class="cart-layout">
         <div class="cart-items">
-          @for (item of items; track item.id) {
+          @for (item of cartService.items(); track item.producto.id) {
             <div class="cart-item-card">
-              <div class="item-img-placeholder"></div>
+              <img [src]="item.producto.imagen" class="item-img" alt="{{ item.producto.nombre }}" />
               <div class="item-info">
-                <h3>{{ item.nombre }}</h3>
-                <p class="item-price">\${{ item.precio }}</p>
+                <h3>{{ item.producto.nombre }}</h3>
+                <p class="item-price">\${{ item.producto.precio }}</p>
               </div>
 
               <div class="quantity-controls">
-                <button (click)="disminuirCantidad(item)">-</button>
+                <button (click)="cartService.cambiarCantidad(item.producto.id, -1)">-</button>
                 <span>{{ item.cantidad }}</span>
-                <button (click)="aumentarCantidad(item)">+</button>
+                <button (click)="cartService.cambiarCantidad(item.producto.id, 1)">+</button>
               </div>
 
-              <button class="btn-remove" (click)="eliminarItem(item.id)">Quitar</button>
+              <button class="btn-remove" (click)="cartService.eliminar(item.producto.id)">Quitar</button>
             </div>
           } @empty {
             <div class="empty-cart">
@@ -39,12 +40,12 @@ import { MsalService } from '@azure/msal-angular';
 
         <div class="cart-summary-card">
           <h3>Resumen de la Orden</h3>
-          
+
           <div class="summary-row">
-            <span>Subtotal ({{ items.length }} items)</span>
-            <span>\${{ obtenerSubtotal() }}</span>
+            <span>Subtotal ({{ cartService.cantidadTotal() }} items)</span>
+            <span>\${{ cartService.total() }}</span>
           </div>
-          
+
           <div class="summary-row">
             <span>Envío estimado</span>
             <span class="text-success">Gratis</span>
@@ -54,7 +55,7 @@ import { MsalService } from '@azure/msal-angular';
 
           <div class="summary-row total-row">
             <strong>Total</strong>
-            <strong>\${{ obtenerSubtotal() }}</strong>
+            <strong>\${{ cartService.total() }}</strong>
           </div>
 
           <button class="btn-checkout" (click)="procesarPedido()">
@@ -64,15 +65,12 @@ import { MsalService } from '@azure/msal-angular';
       </div>
     </div>
 
-    <!-- Modal 1: Requerir Inicio de Sesión -->
     @if (mostrarModalLogin) {
       <div class="modal-overlay">
         <div class="modal-card">
           <div class="modal-icon">🔒</div>
           <h3>Inicio de Sesión Requerido</h3>
-          <p>
-            Para continuar con el proceso de pago y completar tu compra, necesitas iniciar sesión con tu cuenta.
-          </p>
+          <p>Para continuar con el proceso de pago y completar tu compra, necesitas iniciar sesión con tu cuenta.</p>
           <div class="modal-actions">
             <button class="btn-secondary" (click)="cerrarModal()">Cancelar</button>
             <button class="btn-primary" (click)="iniciarSesionYContinuar()">Iniciar Sesión</button>
@@ -81,12 +79,24 @@ import { MsalService } from '@azure/msal-angular';
       </div>
     }
 
-    <!-- Modal 2: Confirmación de Pago Exitoso -->
+    @if (mostrarModalVacio) {
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-icon">🛒</div>
+          <h3>Carrito Vacío</h3>
+          <p>Aún no has agregado productos. Ve al catálogo y elige algo antes de procesar el pedido.</p>
+          <div class="modal-actions modal-actions-single">
+            <button class="btn-primary" (click)="cerrarModalVacio()">Entendido</button>
+          </div>
+        </div>
+      </div>
+    }
+
     @if (mostrarModalExito) {
       <div class="modal-overlay">
         <div class="modal-card">
           <div class="modal-icon text-success">✅</div>
-          <p>Procediendo al pago del pedido.</p>
+          <p>Pedido procesado y guardado correctamente.</p>
           <div class="modal-actions modal-actions-single">
             <button class="btn-primary" (click)="cerrarModalExito()">Aceptar</button>
           </div>
@@ -95,82 +105,59 @@ import { MsalService } from '@azure/msal-angular';
     }
   `
 })
-export class Carrito implements OnInit {
+export class Carrito {
+  protected cartService = inject(CartService);
+  private carritoService = inject(CarritoService);
   private msalService = inject(MsalService);
-  private cdr = inject(ChangeDetectorRef);
 
-  isLoggedIn = false;
   mostrarModalLogin = false;
   mostrarModalExito = false;
-
-  items = [
-    { id: 1, nombre: 'Producto Ejemplo 1', precio: 15000, cantidad: 1 },
-    { id: 2, nombre: 'Producto Ejemplo 2', precio: 28000, cantidad: 1 }
-  ];
-
-  ngOnInit(): void {
-    this.verificarEstadoSesion();
-  }
-
-  verificarEstadoSesion(): void {
-    const activeAccount = this.msalService.instance.getActiveAccount();
-    const allAccounts = this.msalService.instance.getAllAccounts();
-    this.isLoggedIn = !!activeAccount || allAccounts.length > 0;
-    this.cdr.detectChanges();
-  }
+  mostrarModalVacio = false;
 
   procesarPedido(): void {
-    this.verificarEstadoSesion();
+    if (this.cartService.items().length === 0) {
+      this.mostrarModalVacio = true;
+      return;
+    }
 
-    if (!this.isLoggedIn) {
+    const account = this.msalService.instance.getActiveAccount();
+
+    if (!account) {
       this.mostrarModalLogin = true;
       return;
     }
 
-    this.ejecutarPago();
+    this.sincronizarConBackend(account.username);
+  }
+
+  sincronizarConBackend(usuarioId: string): void {
+    const items = this.cartService.items();
+
+    items.forEach(item => {
+      this.carritoService.agregar({
+        usuarioId,
+        productoId: item.producto.id,
+        nombreProducto: item.producto.nombre,
+        precioUnitario: item.producto.precio,
+        cantidad: item.cantidad
+      }).subscribe({
+        error: (err) => console.error('Error guardando item en el carrito:', err)
+      });
+    });
+
+    this.cartService.limpiar();
+    this.mostrarModalExito = true;
   }
 
   iniciarSesionYContinuar(): void {
     this.mostrarModalLogin = false;
-
     for (const key of Object.keys(sessionStorage)) {
-      if (key.includes('msal')) {
-        sessionStorage.removeItem(key);
-      }
+      if (key.includes('msal')) sessionStorage.removeItem(key);
     }
-
-    this.msalService.loginRedirect({
-      scopes: ['user.read', 'openid', 'profile']
-    });
+    this.msalService.loginRedirect({ scopes: ['user.read', 'openid', 'profile'] });
   }
 
-  cerrarModal(): void {
-    this.mostrarModalLogin = false;
-  }
-
-  ejecutarPago(): void {
-    this.mostrarModalExito = true;
-  }
-
-  cerrarModalExito(): void {
-    this.mostrarModalExito = false;
-  }
-
-  obtenerSubtotal(): number {
-    return this.items.reduce((total, i) => total + (i.precio * i.cantidad), 0);
-  }
-
-  aumentarCantidad(item: any): void {
-    item.cantidad++;
-  }
-
-  disminuirCantidad(item: any): void {
-    if (item.cantidad > 1) {
-      item.cantidad--;
-    }
-  }
-
-  eliminarItem(id: number): void {
-    this.items = this.items.filter(i => i.id !== id);
-  }
+  cerrarModal(): void { this.mostrarModalLogin = false; }
+  cerrarModalExito(): void { this.mostrarModalExito = false; }
+  cerrarModalVacio(): void { this.mostrarModalVacio = false; }
 }

@@ -1,5 +1,4 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
-import { environment } from '../environments/environment';
+import { ApplicationConfig, importProvidersFrom, provideAppInitializer, inject } from '@angular/core';
 import {
   provideHttpClient,
   withInterceptorsFromDi,
@@ -8,6 +7,7 @@ import {
 
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
+import { environment } from '../environments/environment';
 
 import {
   MsalModule,
@@ -79,7 +79,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap =
     new Map<string, Array<string>>();
 
-    protectedResourceMap.set(
+  protectedResourceMap.set(
     environment.apiUrl + '/api/',
     [
       'api://9415422a-7394-44ca-a7fb-911e767844a8/access_as_user'
@@ -145,6 +145,13 @@ export const appConfig: ApplicationConfig = {
       provide: HTTP_INTERCEPTORS,
       useClass: MsalInterceptor,
       multi: true
-    }
+    },
+
+    // Inicializa MSAL antes de que cualquier componente
+    // intente leer la sesión (evita "uninitialized_public_client_application")
+    provideAppInitializer(() => {
+      const msalInstance = inject(MSAL_INSTANCE);
+      return msalInstance.initialize();
+    })
   ]
 };
