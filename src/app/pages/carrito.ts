@@ -18,7 +18,7 @@ import { CarritoService } from '../services/carrito.service';
           @for (item of cartService.items(); track item.producto.id) {
             <div class="cart-item-card">
               
-              <!-- RUTA BASADA EN EL ID DEL PRODUCTO DESDE PUBLIC -->
+              <!-- IMAGEN DE PRODUCTO CON TAMAÑO MINIATURA -->
               <img 
                 [src]="'/' + item.producto.id + '.jpg'" 
                 class="item-img" 
@@ -111,7 +111,154 @@ import { CarritoService } from '../services/carrito.service';
         </div>
       </div>
     }
-  `
+  `,
+  styles: [`
+    .cart-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 1.5rem;
+    }
+
+    .cart-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .cart-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Estructura de la tarjeta de producto en el carrito */
+    .cart-item-card {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      background: #ffffff;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    /* FIX: Dimensiones y escalado de la imagen */
+    .item-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain; /* Mantiene la proporción sin deformarse */
+      background-color: #f9fafb;
+      border-radius: 8px;
+      padding: 0.25rem;
+      flex-shrink: 0; /* Impide que la imagen se reduzca o ensanche */
+      border: 1px solid #f3f4f6;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-info h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .item-price {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #4b5563;
+      font-weight: 500;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f3f4f6;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    .quantity-controls button {
+      border: none;
+      background: transparent;
+      width: 24px;
+      height: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .quantity-controls span {
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .btn-remove {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.875rem;
+      padding: 0.5rem;
+    }
+
+    .btn-remove:hover {
+      text-decoration: underline;
+    }
+
+    .cart-summary-card {
+      background: #ffffff;
+      padding: 1.5rem;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    .total-row {
+      font-size: 1.15rem;
+      margin-top: 1rem;
+    }
+
+    .text-success {
+      color: #10b981;
+    }
+
+    .btn-checkout {
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 0.75rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-checkout:hover {
+      background: #1d4ed8;
+    }
+  `]
 })
 export class Carrito {
   protected cartService = inject(CartService);
@@ -165,7 +312,6 @@ export class Carrito {
     this.msalService.loginRedirect({ scopes: ['user.read', 'openid', 'profile'] });
   }
 
-  // Manejo de errores si la imagen basada en el ID no existe
   manejarErrorImagen(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     imgElement.src = '/placeholder-deportivo.jpg';
