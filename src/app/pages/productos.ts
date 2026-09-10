@@ -18,7 +18,6 @@ import { ProductoService, Producto } from '../services/producto.service';
           <div class="product-card">
             
             <div class="product-image">
-              <!-- Se construye la ruta con '/' (que apunta a public) + el nombre exacto + .jpg -->
               <img 
                 [src]="'/' + prod.id + '.jpg'" 
                 [alt]="prod.id" 
@@ -29,7 +28,7 @@ import { ProductoService, Producto } from '../services/producto.service';
 
             <div class="product-info">
               <h3>{{ prod.nombre }}</h3>
-              <p>{{ prod.descripcion }}</p>
+              <p class="product-desc">{{ prod.descripcion }}</p>
               <p class="product-price">{{ prod.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</p>
               <button class="btn-primary" (click)="agregar(prod)">
                 Agregar al Carrito
@@ -41,7 +40,106 @@ import { ProductoService, Producto } from '../services/producto.service';
         }
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+      align-items: stretch;
+    }
+
+    .product-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Contenedor y formateo uniforme para la imagen */
+    .product-image {
+      width: 100%;
+      height: 220px;
+      background-color: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+
+    .product-image img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain; /* Asegura que la imagen quepa completa sin recortarse */
+      display: block;
+    }
+
+    .product-info {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1; /* Ocupa el espacio disponible para nivelar tarjetas */
+    }
+
+    .product-info h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      color: #1f2937;
+    }
+
+    .product-desc {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin: 0 0 1rem 0;
+      line-height: 1.4;
+    }
+
+    .product-price {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0 0 1rem 0;
+    }
+
+    .btn-primary {
+      margin-top: auto; /* Alinea los botones siempre al fondo */
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+    }
+  `]
 })
 export class Productos implements OnInit {
   private cartService = inject(CartService);
@@ -62,7 +160,6 @@ export class Productos implements OnInit {
 
   manejarErrorImagen(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
-    // Se elimina "public/", debe apuntar a la raíz donde Angular sirve esos archivos
     imgElement.src = '/placeholder-deportivo.jpg'; 
   }
 }
