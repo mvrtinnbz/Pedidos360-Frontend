@@ -16,6 +16,17 @@ import { ProductoService, Producto } from '../services/producto.service';
       <div class="product-grid">
         @for (prod of productos(); track prod.id) {
           <div class="product-card">
+            
+            <div class="product-image">
+              <!-- Se construye la ruta con '/' (que apunta a public) + el nombre exacto + .jpg -->
+              <img 
+                [src]="'/' + prod.nombre + '.jpg'" 
+                [alt]="prod.nombre" 
+                loading="lazy" 
+                (error)="manejarErrorImagen($event)"
+              >
+            </div>
+
             <div class="product-info">
               <h3>{{ prod.nombre }}</h3>
               <p>{{ prod.descripcion }}</p>
@@ -47,5 +58,11 @@ export class Productos implements OnInit {
 
   agregar(producto: Producto): void {
     this.cartService.agregar(producto as any);
+  }
+
+  manejarErrorImagen(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    // Se elimina "public/", debe apuntar a la raíz donde Angular sirve esos archivos
+    imgElement.src = '/placeholder-deportivo.jpg'; 
   }
 }
