@@ -22,6 +22,16 @@ export const routes: Routes = [
       import('./pages/login').then((m) => m.Login)
   },
   {
+    path: 'perfil',
+    loadComponent: () =>
+      import('./pages/perfil').then((m) => m.Perfil)
+  },
+  {
+    path: 'login-failed',
+    loadComponent: () =>
+      import('./pages/login-failed').then((m) => m.LoginFailed)
+  },
+  {
     path: '**',
     redirectTo: ''
   }

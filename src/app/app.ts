@@ -23,8 +23,9 @@ import { AuthService } from './services/auth.service';
         <nav class="nav-links">
           <a routerLink="/productos" class="nav-link">Productos</a>
           <a routerLink="/carrito" class="nav-link">Carrito</a>
-          
+
           @if (authService.isLoggedIn()) {
+            <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
             <a routerLink="/login" class="btn-login-nav session-active">Sesión iniciada</a>
           } @else {
             <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
