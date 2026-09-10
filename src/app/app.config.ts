@@ -1,9 +1,11 @@
-import { ApplicationConfig, importProvidersFrom, provideAppInitializer, inject } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, provideAppInitializer, inject, LOCALE_ID } from '@angular/core';
 import {
   provideHttpClient,
   withInterceptorsFromDi,
   HTTP_INTERCEPTORS
 } from '@angular/common/http';
+import { registerLocaleData } from '@angular/common';
+import localeEsCl from '@angular/common/locales/es-CL';
 
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
@@ -29,6 +31,7 @@ import {
   BrowserCacheLocation
 } from '@azure/msal-browser';
 
+registerLocaleData(localeEsCl);
 
 // ================================
 // Configuración principal de MSAL
@@ -80,7 +83,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
     new Map<string, Array<string>>();
 
   protectedResourceMap.set(
-    environment.apiUrl + '/api/*',
+    `${environment.apiUrl}/api/*`,
     [
       'api://d0261291-fbfe-40fb-b1b0-fae49a04f31f/ReadWrite'
     ]
@@ -100,6 +103,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
 export const appConfig: ApplicationConfig = {
 
   providers: [
+
+    { provide: LOCALE_ID, useValue: 'es-CL' },
 
     provideRouter(routes),
 

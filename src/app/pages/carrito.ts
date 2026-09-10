@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MsalService } from '@azure/msal-angular';
 import { CartService } from '../services/cart.spec';
 import { CarritoService } from '../services/carrito.service';
@@ -7,7 +7,7 @@ import { CarritoService } from '../services/carrito.service';
 @Component({
   selector: 'app-carrito',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyPipe],
   template: `
     <div class="cart-container">
       <h2>Tu Carrito de Compras</h2>
@@ -20,7 +20,7 @@ import { CarritoService } from '../services/carrito.service';
               <img [src]="item.producto.imagen" class="item-img" alt="{{ item.producto.nombre }}" />
               <div class="item-info">
                 <h3>{{ item.producto.nombre }}</h3>
-                <p class="item-price">\${{ item.producto.precio }}</p>
+                <p class="item-price">{{ item.producto.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</p>
               </div>
 
               <div class="quantity-controls">
@@ -43,7 +43,7 @@ import { CarritoService } from '../services/carrito.service';
 
           <div class="summary-row">
             <span>Subtotal ({{ cartService.cantidadTotal() }} items)</span>
-            <span>\${{ cartService.total() }}</span>
+            <span>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</span>
           </div>
 
           <div class="summary-row">
@@ -55,7 +55,7 @@ import { CarritoService } from '../services/carrito.service';
 
           <div class="summary-row total-row">
             <strong>Total</strong>
-            <strong>\${{ cartService.total() }}</strong>
+            <strong>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</strong>
           </div>
 
           <button class="btn-checkout" (click)="procesarPedido()">
