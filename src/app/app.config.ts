@@ -61,7 +61,7 @@ export function MSALGuardConfigFactory(): MsalGuardConfiguration {
 
     authRequest: {
       scopes: [
-        'api://9415422a-7394-44ca-a7fb-911e767844a8/access_as_user'
+        'api://d0261291-fbfe-40fb-b1b0-fae49a04f31f/ReadWrite'
       ]
     },
 
@@ -82,7 +82,7 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   protectedResourceMap.set(
     environment.apiUrl + '/api/*',
     [
-      'api://9415422a-7394-44ca-a7fb-911e767844a8/access_as_user'
+      'api://d0261291-fbfe-40fb-b1b0-fae49a04f31f/ReadWrite'
     ]
   );
 
