@@ -27,4 +27,9 @@ export class CarritoService {
   eliminarItem(id: number) {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  // Se llama después de registrar la orden: la compra ya se realizó.
+  vaciar(usuarioId: string) {
+    return this.http.delete<void>(`${this.baseUrl}/usuario/${usuarioId}`);
+  }
 }

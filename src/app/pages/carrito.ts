@@ -1,8 +1,11 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MsalService } from '@azure/msal-angular';
+import { forkJoin } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { CartService } from '../services/cart.spec';
 import { CarritoService } from '../services/carrito.service';
+import { OrdenService } from '../services/orden.service';
 
 @Component({
   selector: 'app-carrito',
@@ -66,8 +69,8 @@ import { CarritoService } from '../services/carrito.service';
             <strong>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</strong>
           </div>
 
-          <button class="btn-checkout" (click)="procesarPedido()">
-            Procesar Pedido
+          <button class="btn-checkout" (click)="procesarPedido()" [disabled]="procesando">
+            {{ procesando ? 'Procesando...' : 'Procesar Pedido' }}
           </button>
         </div>
       </div>
@@ -104,9 +107,23 @@ import { CarritoService } from '../services/carrito.service';
       <div class="modal-overlay">
         <div class="modal-card">
           <div class="modal-icon text-success">✅</div>
-          <p>Pedido procesado y guardado correctamente.</p>
+          <h3>Orden N° {{ numeroOrden }} registrada</h3>
+          <p>Tu pedido fue procesado correctamente. Te enviaremos la confirmación por correo.</p>
           <div class="modal-actions modal-actions-single">
             <button class="btn-primary" (click)="cerrarModalExito()">Aceptar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (mostrarModalError) {
+      <div class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-icon">⚠️</div>
+          <h3>No se pudo procesar el pedido</h3>
+          <p>{{ mensajeError }}</p>
+          <div class="modal-actions modal-actions-single">
+            <button class="btn-primary" (click)="cerrarModalError()">Entendido</button>
           </div>
         </div>
       </div>
@@ -258,16 +275,27 @@ import { CarritoService } from '../services/carrito.service';
     .btn-checkout:hover {
       background: #1d4ed8;
     }
+
+    .btn-checkout:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
   `]
 })
 export class Carrito {
   protected cartService = inject(CartService);
   private carritoService = inject(CarritoService);
+  private ordenService = inject(OrdenService);
   private msalService = inject(MsalService);
 
   mostrarModalLogin = false;
   mostrarModalExito = false;
   mostrarModalVacio = false;
+  mostrarModalError = false;
+
+  procesando = false;
+  numeroOrden: number | null = null;
+  mensajeError = '';
 
   procesarPedido(): void {
     if (this.cartService.items().length === 0) {
@@ -282,26 +310,57 @@ export class Carrito {
       return;
     }
 
-    this.sincronizarConBackend(account.username);
+    this.realizarCompra(account.username);
   }
 
-  sincronizarConBackend(usuarioId: string): void {
+  // Flujo de compra: carrito (ms-carrito) -> orden (ms-orders + RabbitMQ) -> vaciar carrito.
+  realizarCompra(usuarioId: string): void {
     const items = this.cartService.items();
+    this.procesando = true;
 
-    items.forEach(item => {
+    // 1. Guarda los items en ms-carrito
+    const guardarItems = items.map(item =>
       this.carritoService.agregar({
         usuarioId,
         productoId: item.producto.id,
         nombreProducto: item.producto.nombre,
         precioUnitario: item.producto.precio,
         cantidad: item.cantidad
-      }).subscribe({
-        error: (err) => console.error('Error guardando item en el carrito:', err)
-      });
-    });
+      })
+    );
 
-    this.cartService.limpiar();
-    this.mostrarModalExito = true;
+    forkJoin(guardarItems).pipe(
+
+      // 2. Registra la orden en ms-orders (publica "orden.creada" en RabbitMQ)
+      switchMap(() => this.ordenService.crear({
+        usuarioId,
+        email: usuarioId,
+        items: items.map(item => ({
+          productoId: item.producto.id,
+          cantidad: item.cantidad
+        }))
+      })),
+
+      // 3. Vacía el carrito del usuario en ms-carrito
+      switchMap(orden =>
+        this.carritoService.vaciar(usuarioId).pipe(map(() => orden))
+      )
+
+    ).subscribe({
+      next: (orden) => {
+        this.procesando = false;
+        this.numeroOrden = orden.id;
+        this.cartService.limpiar();
+        this.mostrarModalExito = true;
+      },
+      error: (err) => {
+        console.error('Error al procesar el pedido:', err);
+        this.procesando = false;
+        this.mensajeError = err?.error?.mensaje
+          ?? 'Ocurrió un problema al registrar tu orden. Inténtalo nuevamente.';
+        this.mostrarModalError = true;
+      }
+    });
   }
 
   iniciarSesionYContinuar(): void {
@@ -320,4 +379,5 @@ export class Carrito {
   cerrarModal(): void { this.mostrarModalLogin = false; }
   cerrarModalExito(): void { this.mostrarModalExito = false; }
   cerrarModalVacio(): void { this.mostrarModalVacio = false; }
+  cerrarModalError(): void { this.mostrarModalError = false; }
 }
