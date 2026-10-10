@@ -1,5 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpBackend
+} from '@angular/common/http';
+
 import { environment } from '../../environments/environment';
 
 export interface Producto {
@@ -12,14 +16,22 @@ export interface Producto {
 
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
+
+  // Cliente HTTP normal de Angular
   private http = inject(HttpClient);
+
+  // Cliente HTTP sin interceptores para consultas publicas
+  private httpPublico = new HttpClient(inject(HttpBackend));
+
   private baseUrl = `${environment.apiUrl}/api/productos`;
 
   getAll() {
-    return this.http.get<Producto[]>(this.baseUrl);
+    return this.httpPublico.get<Producto[]>(this.baseUrl);
   }
 
-    getById(id: number) {
-    return this.http.get<Producto>(`${this.baseUrl}/${id}`);
+  getById(id: number) {
+    return this.httpPublico.get<Producto>(
+      `${this.baseUrl}/${id}`
+    );
   }
 }

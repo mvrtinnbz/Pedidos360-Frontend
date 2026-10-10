@@ -1,0 +1,63 @@
+
+{
+  "/api/productos": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/productos/**": {
+    "target": "http://localhost:8081",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/carrito": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/carrito/**": {
+    "target": "http://localhost:8082",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/profile": {
+    "target": "http://localhost:8083",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/profile/**": {
+    "target": "http://localhost:8083",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/ordenes": {
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/ordenes/**": {
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/notificaciones": {
+    "target": "http://localhost:8085",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/notificaciones/**": {
+    "target": "http://localhost:8085",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/facturas": {
+    "target": "http://localhost:8086",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/facturas/**": {
+    "target": "http://localhost:8086",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
