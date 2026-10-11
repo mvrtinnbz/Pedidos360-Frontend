@@ -1,4 +1,6 @@
+
 import { Routes } from '@angular/router';
+import { MsalGuard } from '@azure/msal-angular';
 
 export const routes: Routes = [
   {
@@ -11,7 +13,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/productos').then((m) => m.Productos)
   },
-    {
+  {
     path: 'productos/:id',
     loadComponent: () =>
       import('./pages/producto-detalle').then((m) => m.ProductoDetalle)
@@ -30,6 +32,18 @@ export const routes: Routes = [
     path: 'perfil',
     loadComponent: () =>
       import('./pages/perfil').then((m) => m.Perfil)
+  },
+  {
+    path: 'ordenes',
+    canActivate: [MsalGuard],
+    loadComponent: () =>
+      import('./pages/ordenes').then((m) => m.Ordenes)
+  }, 
+  {
+    path: 'facturas',
+    canActivate: [MsalGuard],
+    loadComponent: () =>
+      import('./pages/facturas').then((m) => m.Facturas)
   },
   {
     path: 'login-failed',

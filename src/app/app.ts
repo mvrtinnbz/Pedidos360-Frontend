@@ -24,12 +24,15 @@ import { AuthService } from './services/auth.service';
           <a routerLink="/productos" class="nav-link">Productos</a>
           <a routerLink="/carrito" class="nav-link">Carrito</a>
 
-          @if (authService.isLoggedIn()) {
-            <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
-            <a routerLink="/login" class="btn-login-nav session-active">Sesión iniciada</a>
-          } @else {
-            <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
-          }
+        @if (authService.isLoggedIn()) {
+          <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
+          <a routerLink="/ordenes" class="nav-link">Mis Órdenes</a>
+          <a routerLink="/facturas" class="nav-link">Mis Facturas</a>
+          <a routerLink="/login" class="btn-login-nav session-active">Sesión iniciada</a>
+        } @else {
+          <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
+        }
+          
         </nav>
       </div>
     </header>
