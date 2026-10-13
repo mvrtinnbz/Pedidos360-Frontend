@@ -1,4 +1,3 @@
-
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -21,7 +20,7 @@ type CriterioFecha = 'fecha-desc' | 'fecha-asc';
 
       <div class="page-header">
         <h1>Mis Facturas</h1>
-        <p>Consulta las facturas de tus compras en FullSport360.</p>
+        <p>Consulta las boletas electrónicas de tus compras en FullSport360.</p>
       </div>
 
       @if (cargando()) {
@@ -167,14 +166,14 @@ type CriterioFecha = 'fecha-desc' | 'fecha-asc';
       }
     </div>
 
-    <!-- MODAL DE DETALLE DE FACTURA -->
+    <!-- MODAL: BOLETA ELECTRÓNICA -->
     @if (modalAbierto()) {
       <div
         class="modal-overlay"
         (click)="cerrarDetalle()">
 
         <div
-          class="modal-factura"
+          class="modal-factura boleta-modal"
           role="dialog"
           aria-modal="true"
           aria-labelledby="titulo-detalle-factura"
@@ -184,7 +183,7 @@ type CriterioFecha = 'fecha-desc' | 'fecha-asc';
 
             <div>
               <h2 id="titulo-detalle-factura">
-                Detalle de Factura
+                Boleta Electrónica
               </h2>
               <p>FullSport360</p>
             </div>
@@ -212,105 +211,116 @@ type CriterioFecha = 'fecha-desc' | 'fecha-asc';
 
             } @else if (facturaSeleccionada(); as f) {
 
-              <div class="factura-numero">
+              <div class="boleta">
 
-                <h3>
-                  {{ f.numeroFactura || 'Factura #' + f.id }}
-                </h3>
+                <!-- ENCABEZADO: EMISOR + RECUADRO DEL DOCUMENTO -->
+                <div class="boleta-encabezado">
 
-                <span class="factura-estado">
-                  {{ f.estado }}
-                </span>
-
-              </div>
-
-              <!-- INFORMACIÓN GENERAL -->
-              <div class="factura-info">
-
-                <div class="summary-row">
-                  <span>Número de factura</span>
-                  <strong>
-                    {{ f.numeroFactura || '#' + f.id }}
-                  </strong>
-                </div>
-
-                <div class="summary-row">
-                  <span>Orden relacionada</span>
-                  <strong>#{{ f.ordenId }}</strong>
-                </div>
-
-                <div class="summary-row">
-                  <span>Fecha de emisión</span>
-                  <span>
-                    {{ f.fechaEmision |
-                       date:'dd/MM/yyyy HH:mm' }}
-                  </span>
-                </div>
-
-                <div class="summary-row">
-                  <span>Estado</span>
-                  <strong>{{ f.estado }}</strong>
-                </div>
-
-                <div class="summary-row">
-                  <span>Correo del cliente</span>
-                  <span>{{ f.email || 'No disponible' }}</span>
-                </div>
-
-              </div>
-
-              <!-- PRODUCTOS FACTURADOS -->
-              <h3 class="detalle-subtitulo">
-                Productos facturados
-              </h3>
-
-              <div class="detalle-tabla">
-
-                <div class="detalle-encabezado">
-                  <span>Producto</span>
-                  <span>Cantidad</span>
-                  <span>Subtotal</span>
-                </div>
-
-                @for (d of f.detalles || []; track d.id) {
-                  <div class="detalle-fila">
-
-                    <span>
-                      {{ d.nombreProducto }}
-                    </span>
-
-                    <span>
-                      {{ d.cantidad }}
-                    </span>
-
-                    <span>
-                      {{ d.subtotal |
-                         currency:'CLP':'symbol-narrow':'1.0-0' }}
-                    </span>
-
+                  <div class="boleta-emisor">
+                    <strong>FULLSPORT360 SpA</strong>
+                    <span>Giro: Venta al por menor de artículos deportivos</span>
+                    <span>Dirección: Av. Deportiva 360, Santiago</span>
+                    <span>Comuna: Santiago</span>
                   </div>
-                } @empty {
-                  <p>No hay productos para mostrar.</p>
-                }
+
+                  <div class="boleta-recuadro">
+                    <span>R.U.T.: 77.777.777-7</span>
+                    <strong>{{ f.tipoDocumento || 'BOLETA ELECTRÓNICA' }}</strong>
+                    <span>N° {{ f.numeroFactura || f.id }}</span>
+                  </div>
+
+                </div>
+
+                <!-- RECEPTOR -->
+                <div class="boleta-receptor">
+
+                  <div>
+                    <span class="boleta-etiqueta">Fecha</span>
+                    <span>: {{ f.fechaEmision | date:'dd-MM-yyyy HH:mm' }}</span>
+                  </div>
+
+                  <div>
+                    <span class="boleta-etiqueta">Señor(es)</span>
+                    <span>: {{ f.nombreCliente || f.email || 'Cliente' }}</span>
+                  </div>
+
+                  <div>
+                    <span class="boleta-etiqueta">Email</span>
+                    <span>: {{ f.email || 'No disponible' }}</span>
+                  </div>
+
+                  <div>
+                    <span class="boleta-etiqueta">Orden de Compra</span>
+                    <span>: #{{ f.ordenId }}</span>
+                  </div>
+
+                  <div>
+                    <span class="boleta-etiqueta">Estado</span>
+                    <span>: {{ f.estado }}</span>
+                  </div>
+
+                </div>
+
+                <!-- DETALLE DE PRODUCTOS -->
+                <div class="boleta-tabla-scroll">
+                  <table class="boleta-tabla">
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Cantidad</th>
+                        <th class="boleta-col-descripcion">Descripción</th>
+                        <th class="boleta-num">Precio</th>
+                        <th class="boleta-num">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (d of f.detalles || []; track d.id) {
+                        <tr>
+                          <td>{{ d.productoId }}</td>
+                          <td>{{ d.cantidad }}</td>
+                          <td class="boleta-col-descripcion">{{ d.nombreProducto }}</td>
+                          <td class="boleta-num">
+                            {{ d.precioUnitario | currency:'CLP':'symbol-narrow':'1.0-0' }}
+                          </td>
+                          <td class="boleta-num">
+                            {{ d.subtotal | currency:'CLP':'symbol-narrow':'1.0-0' }}
+                          </td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="5">No hay productos para mostrar.</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- TOTALES TRIBUTARIOS -->
+                <div class="boleta-totales">
+
+                  <div>
+                    <span>Neto</span>
+                    <span>{{ netoDe(f) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+
+                  <div>
+                    <span>IVA (19%)</span>
+                    <span>{{ ivaDe(f) | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+
+                  <div class="boleta-total">
+                    <span>Total</span>
+                    <span>{{ f.total | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+                  </div>
+
+                </div>
+
+                <p class="boleta-leyenda">
+                  Documento de prueba – sin validez tributaria.
+                  Proyecto académico Pedidos360 / FullSport360.
+                </p>
 
               </div>
-
-              <!-- TOTAL FACTURADO -->
-              <div class="factura-total">
-
-                <span>Total facturado</span>
-
-                <strong>
-                  {{ f.total |
-                     currency:'CLP':'symbol-narrow':'1.0-0' }}
-                </strong>
-
-              </div>
-
-              <p class="factura-pie">
-                Comprobante de compra — FullSport360
-              </p>
-
             }
           </div>
 
@@ -328,7 +338,144 @@ type CriterioFecha = 'fecha-desc' | 'fecha-asc';
         </div>
       </div>
     }
-  `
+  `,
+  styles: [`
+    .boleta-modal {
+      max-width: 760px;
+      width: 95%;
+    }
+
+    .boleta {
+      font-size: 0.85rem;
+      color: #111827;
+    }
+
+    .boleta-encabezado {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .boleta-emisor {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      color: #374151;
+    }
+
+    .boleta-emisor strong {
+      font-size: 0.95rem;
+      color: #111827;
+    }
+
+    .boleta-recuadro {
+      border: 3px solid #dc2626;
+      color: #dc2626;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      font-weight: 700;
+      text-align: center;
+      min-width: 210px;
+    }
+
+    .boleta-recuadro strong {
+      font-size: 1rem;
+    }
+
+    .boleta-receptor {
+      border: 1px solid #111827;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.25rem 1rem;
+    }
+
+    .boleta-etiqueta {
+      display: inline-block;
+      min-width: 120px;
+      font-weight: 700;
+    }
+
+    .boleta-tabla-scroll {
+      overflow-x: auto;
+    }
+
+    .boleta-tabla {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+    }
+
+    .boleta-tabla th,
+    .boleta-tabla td {
+      border: 1px solid #111827;
+      padding: 0.4rem 0.5rem;
+      text-align: center;
+    }
+
+    .boleta-tabla th {
+      background: #f3f4f6;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .boleta-tabla .boleta-col-descripcion {
+      text-align: left;
+    }
+
+    .boleta-tabla .boleta-num {
+      text-align: right;
+    }
+
+    .boleta-totales {
+      margin-left: auto;
+      width: 260px;
+      border: 1px solid #111827;
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .boleta-totales div {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .boleta-total {
+      border-top: 1px solid #d1d5db;
+      padding-top: 0.35rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .boleta-leyenda {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    @media (max-width: 640px) {
+      .boleta-encabezado {
+        flex-direction: column;
+      }
+
+      .boleta-receptor {
+        grid-template-columns: 1fr;
+      }
+
+      .boleta-totales {
+        width: 100%;
+      }
+    }
+  `]
 })
 export class Facturas implements OnInit {
 
@@ -435,6 +582,17 @@ export class Facturas implements OnInit {
     }
 
     this.pagina.set(nuevaPagina);
+  }
+
+  // DESGLOSE TRIBUTARIO
+  // Usa lo calculado por ms-facturacion; si es una factura antigua
+  // (sin neto/iva guardados), lo calcula a partir del total (IVA 19% incluido).
+  netoDe(f: Factura): number {
+    return f.neto ?? Math.round(f.total / 1.19);
+  }
+
+  ivaDe(f: Factura): number {
+    return f.iva ?? (f.total - this.netoDe(f));
   }
 
   // OBTENER DETALLE DESDE MS-FACTURACION

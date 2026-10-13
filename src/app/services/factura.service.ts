@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MsalService } from '@azure/msal-angular';
@@ -17,8 +16,12 @@ export interface Factura {
   id: number;
   ordenId: number;
   numeroFactura: string;
+  tipoDocumento?: string;
   usuarioId: string;
+  nombreCliente?: string;
   email: string;
+  neto?: number;
+  iva?: number;
   total: number;
   estado: string;
   fechaEmision: string;
