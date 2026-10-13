@@ -19,7 +19,10 @@ import { AuthService } from './services/auth.service';
 
     <header class="navbar">
       <div class="nav-container">
-        <a routerLink="/" class="nav-logo">FullSport360</a>
+        <a routerLink="/" class="nav-logo">
+          <img src="logo.png" alt="Logo FullSport360" class="nav-logo-img" />
+          FullSport360
+        </a>
         <nav class="nav-links">
           <a routerLink="/productos" class="nav-link">Productos</a>
           <a routerLink="/carrito" class="nav-link">Carrito</a>
@@ -40,10 +43,60 @@ import { AuthService } from './services/auth.service';
     <main class="main-content">
       <router-outlet></router-outlet>
     </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-container">
+
+        <div class="footer-col footer-marca">
+          <span class="footer-logo">FullSport360</span>
+          <p>
+            Indumentaria, calzado y accesorios deportivos para llevar
+            tu entrenamiento al siguiente nivel.
+          </p>
+          <p class="footer-aviso">
+            Tienda ficticia desarrollada como proyecto académico.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Tienda</h4>
+          <a routerLink="/productos">Productos</a>
+          <a routerLink="/carrito">Carrito</a>
+          @if (authService.isLoggedIn()) {
+            <a routerLink="/ordenes">Mis Órdenes</a>
+            <a routerLink="/facturas">Mis Facturas</a>
+          }
+        </div>
+
+        <div class="footer-col">
+          <h4>Información</h4>
+          <span>Envíos y despachos</span>
+          <span>Cambios y devoluciones</span>
+          <span>Términos y condiciones</span>
+        </div>
+
+        <div class="footer-col">
+          <h4>Contacto</h4>
+          <span>fullsport360.tienda&#64;gmail.com</span>
+          <span>Av. Deportiva 360, Santiago</span>
+          <span>Lunes a viernes, 9:00 a 18:00</span>
+        </div>
+
+      </div>
+
+      <div class="footer-inferior">
+        <span>© {{ anioActual }} FullSport360 · Proyecto académico Pedidos360</span>
+        <span class="footer-tecnologias">
+          Angular · Spring Boot · RabbitMQ · AWS · Azure Entra ID
+        </span>
+      </div>
+    </footer>
   `
 })
 export class App implements OnInit {
   protected readonly title = signal('pedidos360');
+  protected readonly anioActual = new Date().getFullYear();
   public authService = inject(AuthService);
   private msalService = inject(MsalService);
 
