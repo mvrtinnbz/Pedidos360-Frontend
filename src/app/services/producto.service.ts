@@ -12,6 +12,7 @@ export interface Producto {
   descripcion: string;
   precio: number;
   stock: number;
+  categoria?: string;   // Calzado | Protecciones | Accesorios | Balones | Padel
 }
 
 @Injectable({ providedIn: 'root' })

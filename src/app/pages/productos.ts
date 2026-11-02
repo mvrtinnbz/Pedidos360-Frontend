@@ -3,6 +3,7 @@ import { CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
+import { InteraccionService } from '../services/interaccion.service';
 
 @Component({
   selector: 'app-productos',
@@ -147,6 +148,7 @@ export class Productos implements OnInit {
   private cartService = inject(CartService);
   private productoService = inject(ProductoService);
   private router = inject(Router);
+  private interaccionService = inject(InteraccionService);
 
   productos = signal<Producto[]>([]);
 
@@ -159,6 +161,8 @@ export class Productos implements OnInit {
 
   agregar(producto: Producto): void {
     this.cartService.agregar(producto as any);
+    // Kafka: PRODUCTO_AGREGADO_CARRITO (ms-carrito)
+    this.interaccionService.registrarAgregadoCarrito(producto);
   }
 
   verDetalle(id: number): void {

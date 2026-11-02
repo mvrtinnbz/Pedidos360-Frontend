@@ -3,6 +3,7 @@ import { CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
+import { InteraccionService } from '../services/interaccion.service';
 
 @Component({
   selector: 'app-producto-detalle',
@@ -147,6 +148,7 @@ export class ProductoDetalle implements OnInit {
   private router = inject(Router);
   private productoService = inject(ProductoService);
   private cartService = inject(CartService);
+  private interaccionService = inject(InteraccionService);
 
   producto = signal<Producto | null>(null);
   noEncontrado = signal(false);
@@ -161,7 +163,11 @@ export class ProductoDetalle implements OnInit {
     }
 
     this.productoService.getById(id).subscribe({
-      next: (data) => this.producto.set(data),
+      next: (data) => {
+        this.producto.set(data);
+        // Kafka: PRODUCTO_VISTO (ms-productos)
+        this.interaccionService.registrarVista(data.id);
+      },
       error: (err) => {
         console.error('Error cargando producto:', err);
         this.noEncontrado.set(true);
@@ -171,6 +177,8 @@ export class ProductoDetalle implements OnInit {
 
   agregar(producto: Producto): void {
     this.cartService.agregar(producto as any);
+    // Kafka: PRODUCTO_AGREGADO_CARRITO (ms-carrito)
+    this.interaccionService.registrarAgregadoCarrito(producto);
   }
 
   manejarErrorImagen(event: Event): void {
