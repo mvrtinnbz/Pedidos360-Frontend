@@ -1,4 +1,3 @@
-
 import { Routes } from '@angular/router';
 import { MsalGuard } from '@azure/msal-angular';
 
@@ -38,12 +37,18 @@ export const routes: Routes = [
     canActivate: [MsalGuard],
     loadComponent: () =>
       import('./pages/ordenes').then((m) => m.Ordenes)
-  }, 
+  },
   {
     path: 'facturas',
     canActivate: [MsalGuard],
     loadComponent: () =>
       import('./pages/facturas').then((m) => m.Facturas)
+  },
+  {
+    // A esta pagina vuelve el cliente desde Webpay (redirige ms-pago)
+    path: 'pago-resultado',
+    loadComponent: () =>
+      import('./pages/pago-resultado').then((m) => m.PagoResultado)
   },
   {
     path: 'login-failed',
