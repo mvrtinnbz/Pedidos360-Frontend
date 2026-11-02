@@ -9,6 +9,7 @@ import {
   signal
 } from '@angular/core';
 import { Orden, OrdenService } from '../services/orden.service';
+import { PagoService } from '../services/pago.service';
 
 type CriterioOrden =
   | 'fecha-desc'
@@ -86,6 +87,10 @@ type CriterioOrden =
             </div>
           </div>
 
+          @if (mensajePago()) {
+            <div class="orden-mensaje-pago">{{ mensajePago() }}</div>
+          }
+
           <!-- TABLA DE ÓRDENES -->
           <div class="ordenes-tabla-scroll">
             <table class="ordenes-tabla">
@@ -145,8 +150,8 @@ type CriterioOrden =
                     </td>
 
                     <td>
-                      <span class="orden-estado">
-                        {{ orden.estado }}
+                      <span [class]="'orden-estado ' + claseEstado(orden.estado)">
+                        {{ textoEstado(orden.estado) }}
                       </span>
                     </td>
 
@@ -158,12 +163,25 @@ type CriterioOrden =
                     </td>
 
                     <td>
-                      <button
-                        type="button"
-                        class="btn-primary orden-btn-detalle"
-                        (click)="verDetalle(orden.id)">
-                        Ver detalle
-                      </button>
+                      <div class="orden-acciones">
+                        <button
+                          type="button"
+                          class="btn-primary orden-btn-detalle"
+                          (click)="verDetalle(orden.id)">
+                          Ver detalle
+                        </button>
+
+                        <!-- Pagar: solo ordenes pendientes o con pago rechazado -->
+                        @if (puedePagar(orden.estado)) {
+                          <button
+                            type="button"
+                            class="orden-btn-pagar"
+                            [disabled]="pagandoId() !== null"
+                            (click)="pagar(orden.id)">
+                            {{ pagandoId() === orden.id ? 'Redirigiendo...' : 'Pagar' }}
+                          </button>
+                        }
+                      </div>
                     </td>
 
                   </tr>
@@ -253,8 +271,8 @@ type CriterioOrden =
 
                 <h3>Orden #{{ o.id }}</h3>
 
-                <span class="orden-estado">
-                  {{ o.estado }}
+                <span [class]="'orden-estado ' + claseEstado(o.estado)">
+                  {{ textoEstado(o.estado) }}
                 </span>
 
               </div>
@@ -277,7 +295,7 @@ type CriterioOrden =
 
                 <div class="summary-row">
                   <span>Estado</span>
-                  <strong>{{ o.estado }}</strong>
+                  <strong>{{ textoEstado(o.estado) }}</strong>
                 </div>
 
                 <div class="summary-row">
@@ -344,6 +362,18 @@ type CriterioOrden =
 
           <div class="modal-footer">
 
+            @if (ordenSeleccionada(); as o) {
+              @if (puedePagar(o.estado)) {
+                <button
+                  type="button"
+                  class="orden-btn-pagar"
+                  [disabled]="pagandoId() !== null"
+                  (click)="pagar(o.id)">
+                  {{ pagandoId() === o.id ? 'Redirigiendo...' : 'Pagar con Webpay' }}
+                </button>
+              }
+            }
+
             <button
               type="button"
               class="btn-primary"
@@ -356,11 +386,69 @@ type CriterioOrden =
         </div>
       </div>
     }
-  `
+  `,
+  styles: [`
+    /* Colores por estado (se suman a la clase global .orden-estado) */
+    .estado-pagada {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .estado-pendiente {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .estado-rechazada {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .orden-acciones {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .orden-btn-pagar {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .orden-btn-pagar:hover {
+      background: #15803d;
+    }
+
+    .orden-btn-pagar:disabled {
+      background: #86efac;
+      cursor: not-allowed;
+    }
+
+    .orden-mensaje-pago {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+  `]
 })
 export class Ordenes implements OnInit {
 
   private ordenService = inject(OrdenService);
+  private pagoService = inject(PagoService);
+
+  // PAGO DESDE MIS ÓRDENES
+  pagandoId = signal<number | null>(null);
+  mensajePago = signal('');
 
   // LISTADO DE ÓRDENES
   ordenes = signal<Orden[]>([]);
@@ -527,6 +615,63 @@ export class Ordenes implements OnInit {
     this.ordenSeleccionada.set(null);
     this.cargandoDetalle.set(false);
     this.errorDetalle.set(false);
+  }
+
+  // ESTADOS: texto legible y color
+  textoEstado(estado: string): string {
+    switch (estado) {
+      case 'PAGADA': return 'Pagada';
+      case 'PENDIENTE_PAGO': return 'Pendiente de pago';
+      case 'PAGO_RECHAZADO': return 'Pago rechazado';
+      case 'CREADA': return 'Completada';   // ordenes antiguas (antes de Webpay)
+      default: return estado;
+    }
+  }
+
+  claseEstado(estado: string): string {
+    switch (estado) {
+      case 'PAGADA':
+      case 'CREADA':
+        return 'estado-pagada';
+      case 'PENDIENTE_PAGO':
+        return 'estado-pendiente';
+      case 'PAGO_RECHAZADO':
+        return 'estado-rechazada';
+      default:
+        return '';
+    }
+  }
+
+  puedePagar(estado: string): boolean {
+    return estado === 'PENDIENTE_PAGO' || estado === 'PAGO_RECHAZADO';
+  }
+
+  // PAGAR UNA ORDEN PENDIENTE O RECHAZADA (redirige a Webpay)
+  pagar(ordenId: number): void {
+    this.pagandoId.set(ordenId);
+    this.mensajePago.set('');
+
+    this.pagoService.iniciarWebpay(ordenId).subscribe({
+      next: (respuesta) => {
+        if (respuesta.url && respuesta.token) {
+          this.pagoService.redirigirAWebpay(respuesta.url, respuesta.token);
+        } else {
+          this.pagandoId.set(null);
+          this.mensajePago.set('No se pudo iniciar el pago con Webpay. Inténtalo nuevamente.');
+        }
+      },
+      error: (err) => {
+        console.error('Error al iniciar el pago:', err);
+        this.pagandoId.set(null);
+
+        if (err?.status === 403 && err?.error?.estado === 'BLOQUEADO_FRAUDE') {
+          this.mensajePago.set('Por seguridad bloqueamos este intento: hubo demasiados intentos de pago '
+            + 'en poco tiempo. Espera unos segundos y vuelve a intentarlo.');
+        } else {
+          this.mensajePago.set(err?.error?.message ?? 'No se pudo iniciar el pago. Inténtalo nuevamente.');
+        }
+      }
+    });
   }
 
   @HostListener('document:keydown.escape')
