@@ -2,10 +2,11 @@ import { Component, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MsalService } from '@azure/msal-angular';
 import { forkJoin } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { switchMap } from 'rxjs/operators';
 import { CartService } from '../services/cart.spec';
 import { CarritoService } from '../services/carrito.service';
 import { OrdenService } from '../services/orden.service';
+import { PagoService } from '../services/pago.service';
 
 @Component({
   selector: 'app-carrito',
@@ -70,8 +71,10 @@ import { OrdenService } from '../services/orden.service';
           </div>
 
           <button class="btn-checkout" (click)="procesarPedido()" [disabled]="procesando">
-            {{ procesando ? 'Procesando...' : 'Procesar Pedido' }}
+            {{ procesando ? 'Redirigiendo a Webpay...' : 'Pagar con Webpay' }}
           </button>
+
+          <p class="pago-nota">🔒 Serás redirigido a Webpay para pagar de forma segura.</p>
         </div>
       </div>
     </div>
@@ -103,24 +106,11 @@ import { OrdenService } from '../services/orden.service';
       </div>
     }
 
-    @if (mostrarModalExito) {
-      <div class="modal-overlay">
-        <div class="modal-card">
-          <div class="modal-icon text-success">✅</div>
-          <h3>Orden N° {{ numeroOrden }} registrada</h3>
-          <p>Tu pedido fue procesado correctamente. Te enviaremos la confirmación por correo.</p>
-          <div class="modal-actions modal-actions-single">
-            <button class="btn-primary" (click)="cerrarModalExito()">Aceptar</button>
-          </div>
-        </div>
-      </div>
-    }
-
     @if (mostrarModalError) {
       <div class="modal-overlay">
         <div class="modal-card">
           <div class="modal-icon">⚠️</div>
-          <h3>No se pudo procesar el pedido</h3>
+          <h3>No se pudo procesar el pago</h3>
           <p>{{ mensajeError }}</p>
           <div class="modal-actions modal-actions-single">
             <button class="btn-primary" (click)="cerrarModalError()">Entendido</button>
@@ -280,21 +270,27 @@ import { OrdenService } from '../services/orden.service';
       background: #93c5fd;
       cursor: not-allowed;
     }
+
+    .pago-nota {
+      margin: 0.75rem 0 0;
+      font-size: 0.8rem;
+      color: #6b7280;
+      text-align: center;
+    }
   `]
 })
 export class Carrito {
   protected cartService = inject(CartService);
   private carritoService = inject(CarritoService);
   private ordenService = inject(OrdenService);
+  private pagoService = inject(PagoService);
   private msalService = inject(MsalService);
 
   mostrarModalLogin = false;
-  mostrarModalExito = false;
   mostrarModalVacio = false;
   mostrarModalError = false;
 
   procesando = false;
-  numeroOrden: number | null = null;
   mensajeError = '';
 
   procesarPedido(): void {
@@ -313,7 +309,9 @@ export class Carrito {
     this.realizarCompra(account.username);
   }
 
-  // Flujo de compra: carrito (ms-carrito) -> orden (ms-orders + RabbitMQ) -> vaciar carrito.
+  // Flujo de compra:
+  // carrito (ms-carrito) -> orden PENDIENTE_PAGO (ms-orders) -> Webpay (ms-pago).
+  // El carrito se vacia en /pago-resultado, solo si el pago es aprobado.
   realizarCompra(usuarioId: string): void {
     const items = this.cartService.items();
     this.procesando = true;
@@ -331,7 +329,7 @@ export class Carrito {
 
     forkJoin(guardarItems).pipe(
 
-      // 2. Registra la orden en ms-orders (publica "orden.creada" en RabbitMQ)
+      // 2. Registra la orden en ms-orders (queda PENDIENTE_PAGO)
       switchMap(() => this.ordenService.crear({
         usuarioId,
         email: usuarioId,
@@ -341,23 +339,34 @@ export class Carrito {
         }))
       })),
 
-      // 3. Vacía el carrito del usuario en ms-carrito
-      switchMap(orden =>
-        this.carritoService.vaciar(usuarioId).pipe(map(() => orden))
-      )
+      // 3. Crea la transaccion en Webpay (ms-pago obtiene el monto desde ms-orders)
+      switchMap(orden => this.pagoService.iniciarWebpay(orden.id))
 
     ).subscribe({
-      next: (orden) => {
-        this.procesando = false;
-        this.numeroOrden = orden.id;
-        this.cartService.limpiar();
-        this.mostrarModalExito = true;
+      next: (respuesta) => {
+        if (respuesta.url && respuesta.token) {
+          // 4. Sale de la tienda hacia Webpay (procesando queda en true)
+          this.pagoService.redirigirAWebpay(respuesta.url, respuesta.token);
+        } else {
+          this.procesando = false;
+          this.mensajeError = 'No se pudo iniciar el pago con Webpay. Inténtalo nuevamente.';
+          this.mostrarModalError = true;
+        }
       },
       error: (err) => {
-        console.error('Error al procesar el pedido:', err);
+        console.error('Error al procesar el pago:', err);
         this.procesando = false;
-        this.mensajeError = err?.error?.mensaje
-          ?? 'Ocurrió un problema al registrar tu orden. Inténtalo nuevamente.';
+
+        // 403 de ms-pago: bloqueado por la regla antifraude
+        if (err?.status === 403 && err?.error?.estado === 'BLOQUEADO_FRAUDE') {
+          this.mensajeError = 'Por seguridad bloqueamos este intento: hubo demasiados intentos de pago '
+            + 'en poco tiempo. Espera unos segundos y vuelve a intentarlo desde Mis Órdenes.';
+        } else {
+          this.mensajeError = err?.error?.mensaje
+            ?? err?.error?.message
+            ?? 'Ocurrió un problema al procesar tu compra. Inténtalo nuevamente.';
+        }
+
         this.mostrarModalError = true;
       }
     });
@@ -377,7 +386,6 @@ export class Carrito {
   }
 
   cerrarModal(): void { this.mostrarModalLogin = false; }
-  cerrarModalExito(): void { this.mostrarModalExito = false; }
   cerrarModalVacio(): void { this.mostrarModalVacio = false; }
   cerrarModalError(): void { this.mostrarModalError = false; }
 }
