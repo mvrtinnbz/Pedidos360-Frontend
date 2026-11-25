@@ -68,5 +68,21 @@
     "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true
+  },
+    "/api/analytics": {
+    "target": "http://localhost:8088",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/analytics/**": {
+    "target": "http://localhost:8088",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/ws/metricas": {
+    "target": "http://localhost:8088",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true
   }
 }

@@ -55,6 +55,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/login-failed').then((m) => m.LoginFailed)
   },
+    {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./pages/dashboard').then((m) => m.Dashboard)
+  },
   {
     path: '**',
     redirectTo: ''

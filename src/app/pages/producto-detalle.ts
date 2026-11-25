@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
 import { InteraccionService } from '../services/interaccion.service';
+import { AnalyticsService } from '../services/analytics.service';
 
 @Component({
   selector: 'app-producto-detalle',
@@ -36,6 +37,20 @@ import { InteraccionService } from '../services/interaccion.service';
         <p class="not-found">No se encontró el producto solicitado.</p>
       } @else {
         <p>Cargando producto...</p>
+      }
+        @if (recomendados().length > 0) {
+          <section class="recomendados">
+            <h2>Te puede interesar</h2>
+            <div class="rec-grid">
+              @for (r of recomendados(); track r.id) {
+                <a class="rec-card" [routerLink]="['/productos', r.id]">
+                  <img [src]="'/' + r.id + '.jpg'" [alt]="r.nombre" (error)="manejarErrorImagen($event)">
+                  <span class="rec-nombre">{{ r.nombre }}</span>
+                  <span class="rec-precio">{{ r.precio | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</span>
+                </a>
+              }
+            </div>
+          </section>
       }
     </div>
   `,
@@ -141,6 +156,14 @@ import { InteraccionService } from '../services/interaccion.service';
       text-align: center;
       margin-top: 2rem;
     }
+    .recomendados { margin-top: 2rem; }
+    .recomendados h2 { font-size: 1.2rem; color: #1f2937; margin: 0 0 1rem; }
+    .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+    .rec-card { display: flex; flex-direction: column; gap: 0.4rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 0.75rem; text-decoration: none; color: inherit; }
+    .rec-card:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .rec-card img { width: 100%; height: 110px; object-fit: contain; background: #f9fafb; border-radius: 6px; }
+    .rec-nombre { font-size: 0.9rem; font-weight: 600; color: #1f2937; }
+    .rec-precio { font-size: 0.9rem; color: #2563eb; font-weight: 700; }
   `]
 })
 export class ProductoDetalle implements OnInit {
@@ -149,29 +172,43 @@ export class ProductoDetalle implements OnInit {
   private productoService = inject(ProductoService);
   private cartService = inject(CartService);
   private interaccionService = inject(InteraccionService);
+  private analyticsService = inject(AnalyticsService);
 
   producto = signal<Producto | null>(null);
   noEncontrado = signal(false);
+  recomendados = signal<Producto[]>([]);
 
   ngOnInit(): void {
-    const idParam = this.route.snapshot.paramMap.get('id');
-    const id = Number(idParam);
+    this.route.paramMap.subscribe((params) => {
+      const idParam = params.get('id');
+      const id = Number(idParam);
 
-    if (!idParam || Number.isNaN(id)) {
-      this.noEncontrado.set(true);
-      return;
-    }
+      this.producto.set(null);
+      this.noEncontrado.set(false);
+      this.recomendados.set([]);
 
-    this.productoService.getById(id).subscribe({
-      next: (data) => {
-        this.producto.set(data);
-        // Kafka: PRODUCTO_VISTO (ms-productos)
-        this.interaccionService.registrarVista(data.id);
-      },
-      error: (err) => {
-        console.error('Error cargando producto:', err);
+      if (!idParam || Number.isNaN(id)) {
         this.noEncontrado.set(true);
+        return;
       }
+
+      this.productoService.getById(id).subscribe({
+        next: (data) => {
+          this.producto.set(data);
+          // Kafka: PRODUCTO_VISTO (ms-productos)
+          this.interaccionService.registrarVista(data.id);
+        },
+        error: (err) => {
+          console.error('Error cargando producto:', err);
+          this.noEncontrado.set(true);
+        }
+      });
+
+      // Recomendaciones (ms-analytics); si falla, el bloque simplemente no aparece
+      this.analyticsService.getRecomendaciones().subscribe({
+        next: (lista) => this.recomendados.set(lista.filter((p) => p.id !== id).slice(0, 4)),
+        error: () => {}
+      });
     });
   }
 

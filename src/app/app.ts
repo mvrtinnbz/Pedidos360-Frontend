@@ -26,6 +26,7 @@ import { AuthService } from './services/auth.service';
         <nav class="nav-links">
           <a routerLink="/productos" class="nav-link">Productos</a>
           <a routerLink="/carrito" class="nav-link">Carrito</a>
+          <a routerLink="/dashboard" class="nav-link">Dashboard</a>
 
         @if (authService.isLoggedIn()) {
           <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
