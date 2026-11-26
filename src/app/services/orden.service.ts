@@ -11,6 +11,10 @@ export interface OrdenItemRequest {
 export interface OrdenRequest {
   usuarioId: string;
   email: string;
+
+  // Opcional: permite comprar sin cupones.
+  codigoCupon?: string;
+
   items: OrdenItemRequest[];
 }
 
@@ -26,31 +30,49 @@ export interface Orden {
   id: number;
   usuarioId: string;
   email: string;
+
+  // Informacion de descuentos.
+  subtotal: number | null;
+  codigoCupon: string | null;
+  descuento: number | null;
+
+  // Importe definitivo de la orden.
   total: number;
+
   estado: string;
   fechaCreacion: string;
   items: OrdenItem[];
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class OrdenService {
 
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  private baseUrl = `${environment.apiUrl}/api/ordenes`;
+  private readonly baseUrl =
+    `${environment.apiUrl}/api/ordenes`;
 
-  // Crear una orden.
+  // Crear una orden con o sin cupon.
   crear(orden: OrdenRequest) {
-    return this.http.post<Orden>(this.baseUrl, orden);
+    return this.http.post<Orden>(
+      this.baseUrl,
+      orden
+    );
   }
 
-  // Consultar únicamente las órdenes del usuario autenticado.
+  // Consultar las ordenes del usuario autenticado.
   obtenerMisOrdenes() {
-    return this.http.get<Orden[]>(`${this.baseUrl}/mis-ordenes`);
+    return this.http.get<Orden[]>(
+      `${this.baseUrl}/mis-ordenes`
+    );
   }
 
   // Consultar el detalle de una orden.
   obtenerPorId(id: number) {
-    return this.http.get<Orden>(`${this.baseUrl}/${id}`);
+    return this.http.get<Orden>(
+      `${this.baseUrl}/${id}`
+    );
   }
 }

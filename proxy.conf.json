@@ -68,5 +68,15 @@
     "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true
+  },
+  "/api/cupones": {
+    "target": "http://localhost:8089",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api/cupones/**": {
+    "target": "http://localhost:8089",
+    "secure": false,
+    "changeOrigin": true
   }
 }

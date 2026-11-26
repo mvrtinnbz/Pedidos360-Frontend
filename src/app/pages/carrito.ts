@@ -1,12 +1,13 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { MsalService } from '@azure/msal-angular';
 import { forkJoin } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { CartService } from '../services/cart.spec';
 import { CarritoService } from '../services/carrito.service';
-import { OrdenService } from '../services/orden.service';
+import { Orden, OrdenService } from '../services/orden.service';
 import { PagoService } from '../services/pago.service';
+import { CuponesService, ResultadoDescuento } from '../services/cupones.service';
 
 @Component({
   selector: 'app-carrito',
@@ -63,6 +64,61 @@ import { PagoService } from '../services/pago.service';
             <span class="text-success">Gratis</span>
           </div>
 
+          <div class="coupon-section">
+            <label for="codigo-cupon"><strong>Código promocional</strong></label>
+            <div class="coupon-controls">
+              <input id="codigo-cupon" type="text" placeholder="Ej. FULLSPORT10"
+                [value]="codigoCupon"
+                (input)="actualizarCodigoCupon($event)"
+                [disabled]="consultandoCupon || procesando" />
+              <button type="button" (click)="consultarCupon()"
+                [disabled]="consultandoCupon || procesando || !codigoCupon.trim()">
+                {{ consultandoCupon ? 'Consultando...' : 'Consultar' }}
+              </button>
+            </div>
+
+            @if (errorCupon) {
+              <p class="coupon-error">{{ errorCupon }}</p>
+            }
+
+            @if (descuentoConsultado && huellaCarritoConsultado === huellaCarrito()) {
+              <div class="coupon-result">
+                <div class="summary-row">
+                  <span>Descuento estimado ({{ descuentoConsultado.codigo }})</span>
+                  <span class="text-success">-{{ descuentoConsultado.descuento | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</span>
+                </div>
+                <div class="summary-row">
+                  <strong>Total estimado con cupón</strong>
+                  <strong>{{ descuentoConsultado.totalFinal | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</strong>
+                </div>
+                <p class="coupon-warning">Descuento estimado. Puedes probar el registro de la orden sin iniciar Webpay.</p>
+                @if (!ordenPrueba) {
+                  <button type="button" class="btn-test-order" (click)="crearOrdenDePrueba()"
+                    [disabled]="procesando || consultandoCupon || pruebaEnCurso || pruebaIntentada">
+                    {{ pruebaEnCurso ? 'Creando orden de prueba...' : 'Probar creación de orden con cupón (sin pagar)' }}
+                  </button>
+                }
+                @if (errorPrueba) {
+                  <p class="coupon-error">{{ errorPrueba }}</p>
+                }
+                @if (ordenPrueba) {
+                  <div class="test-result">
+                    <strong>Orden de prueba #{{ ordenPrueba.id }} creada</strong>
+                    <div>Estado: {{ ordenPrueba.estado }}</div>
+                    <div>Subtotal: {{ ordenPrueba.subtotal | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</div>
+                    <div>Descuento: {{ ordenPrueba.descuento | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</div>
+                    <div>Total registrado: {{ ordenPrueba.total | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</div>
+                    <p class="coupon-warning">No se inició Webpay ni se consumió un uso del cupón. Esta orden queda PENDIENTE_PAGO en MySQL.</p>
+                  </div>
+                }
+                <button type="button" class="coupon-remove" (click)="quitarCupon()">Quitar cupón</button>
+              </div>
+            } @else if (descuentoConsultado) {
+              <p class="coupon-error">El carrito cambió. Consulta nuevamente el cupón.</p>
+              <button type="button" class="coupon-remove" (click)="quitarCupon()">Quitar cupón</button>
+            }
+          </div>
+
           <hr />
 
           <div class="summary-row total-row">
@@ -70,10 +126,13 @@ import { PagoService } from '../services/pago.service';
             <strong>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0':'es-CL' }}</strong>
           </div>
 
-          <button class="btn-checkout" (click)="procesarPedido()" [disabled]="procesando">
+          <button class="btn-checkout" (click)="procesarPedido()" [disabled]="procesando || !!descuentoConsultado">
             {{ procesando ? 'Redirigiendo a Webpay...' : 'Pagar con Webpay' }}
           </button>
 
+          @if (descuentoConsultado) {
+            <p class="coupon-warning">Para pagar, primero quita el cupón. Habilitaremos el pago con descuentos cuando MS-Orders lo calcule en el backend.</p>
+          }
           <p class="pago-nota">🔒 Serás redirigido a Webpay para pagar de forma segura.</p>
         </div>
       </div>
@@ -120,6 +179,20 @@ import { PagoService } from '../services/pago.service';
     }
   `,
   styles: [`
+    .coupon-section { margin: 1.1rem 0; }
+    .coupon-section label { display: block; margin-bottom: 0.5rem; }
+    .coupon-controls { display: flex; gap: 0.5rem; }
+    .coupon-controls input { min-width: 0; flex: 1; padding: 0.65rem; border: 1px solid #d1d5db; border-radius: 6px; }
+    .coupon-controls button { padding: 0.65rem; border: none; border-radius: 6px; background: #2563eb; color: white; cursor: pointer; }
+    .coupon-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .coupon-result { background: #f0fdf4; padding: 0.75rem; margin-top: 0.75rem; border-radius: 6px; }
+    .coupon-error { color: #b91c1c; font-size: 0.85rem; }
+    .coupon-warning { color: #92400e; font-size: 0.8rem; margin-top: 0.75rem; }
+    .coupon-remove { border: 0; background: transparent; color: #1d4ed8; text-decoration: underline; cursor: pointer; padding: 0.25rem 0; }
+    .btn-test-order { margin: 0.75rem 0; width: 100%; padding: 0.75rem; border: 0; border-radius: 6px; background: #0f766e; color: white; font-weight: 600; cursor: pointer; }
+    .btn-test-order:disabled { opacity: 0.5; cursor: not-allowed; }
+    .test-result { border: 1px solid #86efac; border-radius: 6px; padding: 0.75rem; margin-top: 0.5rem; background: #fff; font-size: 0.88rem; }
+
     .cart-container {
       max-width: 1100px;
       margin: 0 auto;
@@ -285,6 +358,138 @@ export class Carrito {
   private ordenService = inject(OrdenService);
   private pagoService = inject(PagoService);
   private msalService = inject(MsalService);
+  private cuponesService = inject(CuponesService);
+  private cdr = inject(ChangeDetectorRef);
+
+  codigoCupon = '';
+  consultandoCupon = false;
+  errorCupon = '';
+  descuentoConsultado: ResultadoDescuento | null = null;
+  huellaCarritoConsultado = '';
+  private consultaId = 0;
+  pruebaEnCurso = false;
+  pruebaIntentada = false;
+  ordenPrueba: Orden | null = null;
+  errorPrueba = '';
+
+  huellaCarrito(): string {
+    return JSON.stringify(this.cartService.items().map(item => [
+      item.producto.id, item.cantidad, item.producto.precio
+    ]).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+  }
+
+  actualizarCodigoCupon(event: Event): void {
+    this.codigoCupon = (event.target as HTMLInputElement).value;
+    this.consultandoCupon = false;
+    this.errorCupon = '';
+    this.descuentoConsultado = null;
+    this.consultaId++;
+  }
+
+  quitarCupon(): void {
+    this.codigoCupon = '';
+    this.consultandoCupon = false;
+    this.errorCupon = '';
+    this.descuentoConsultado = null;
+    this.huellaCarritoConsultado = '';
+    this.consultaId++;
+  }
+
+  consultarCupon(): void {
+    if (this.cartService.items().length === 0) {
+      this.errorCupon = 'Agrega productos al carrito antes de consultar un cupón.';
+      return;
+    }
+
+    if (!this.msalService.instance.getActiveAccount()) {
+      this.errorCupon = 'Inicia sesión con Microsoft para consultar el cupón.';
+      return;
+    }
+
+    const codigo = this.codigoCupon.trim();
+    if (!codigo) return;
+
+    const huella = this.huellaCarrito();
+    const solicitud = ++this.consultaId;
+    this.consultandoCupon = true;
+    this.errorCupon = '';
+    this.descuentoConsultado = null;
+
+    this.cuponesService.calcularDescuento(codigo, this.cartService.total()).subscribe({
+      next: (resultado) => {
+        if (solicitud !== this.consultaId) return;
+
+        this.consultandoCupon = false;
+
+        if (huella !== this.huellaCarrito()) {
+          this.errorCupon = 'El carrito cambió durante la consulta. Inténtalo nuevamente.';
+        } else {
+          this.descuentoConsultado = resultado;
+          this.huellaCarritoConsultado = huella;
+        }
+
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        if (solicitud !== this.consultaId) return;
+
+        this.consultandoCupon = false;
+        this.errorCupon = err?.error?.mensaje ??
+          (err?.status === 401
+            ? 'Tu sesión no está autenticada. Inicia sesión nuevamente.'
+            : 'No fue posible validar el cupón. Inténtalo nuevamente.');
+
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  // Prueba temporal: guarda una orden con cupon SIN llamar a MS-Pago.
+  // Crea un registro real PENDIENTE_PAGO en MySQL. Solo una vez por carga del carrito.
+  crearOrdenDePrueba(): void {
+    if (this.pruebaEnCurso || this.pruebaIntentada || this.procesando) return;
+
+    const cuenta = this.msalService.instance.getActiveAccount();
+    const descuento = this.descuentoConsultado;
+    const items = this.cartService.items();
+
+    if (!cuenta) {
+      this.errorPrueba = 'Inicia sesión con Microsoft para crear la orden de prueba.';
+      return;
+    }
+    if (!descuento || items.length === 0 ||
+        this.huellaCarritoConsultado !== this.huellaCarrito()) {
+      this.errorPrueba = 'Consulta un cupón vigente para el carrito actual.';
+      return;
+    }
+
+    this.pruebaEnCurso = true;
+    this.pruebaIntentada = true;
+    this.errorPrueba = '';
+
+    this.ordenService.crear({
+      usuarioId: cuenta.username,
+      email: cuenta.username,
+      codigoCupon: descuento.codigo,
+      items: items.map(item => ({
+        productoId: item.producto.id,
+        cantidad: item.cantidad
+      }))
+    }).subscribe({
+      next: orden => {
+        this.pruebaEnCurso = false;
+        this.ordenPrueba = orden;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.pruebaEnCurso = false;
+        this.errorPrueba = err?.error?.mensaje ?? err?.error?.message ??
+          `No se pudo crear la orden de prueba (HTTP ${err?.status ?? 'desconocido'}). Revisa MS-Orders.`;
+        // No reintentar automáticamente: la petición podría haber creado una orden antes del error.
+        this.cdr.markForCheck();
+      }
+    });
+  }
 
   mostrarModalLogin = false;
   mostrarModalVacio = false;
@@ -294,6 +499,11 @@ export class Carrito {
   mensajeError = '';
 
   procesarPedido(): void {
+    if (this.descuentoConsultado) {
+      this.mensajeError = 'El pago con cupón todavía no está integrado en MS-Orders. Quita el cupón para pagar sin descuento.';
+      this.mostrarModalError = true;
+      return;
+    }
     if (this.cartService.items().length === 0) {
       this.mostrarModalVacio = true;
       return;
@@ -333,6 +543,12 @@ export class Carrito {
       switchMap(() => this.ordenService.crear({
         usuarioId,
         email: usuarioId,
+        // Preparado para enviar el cupón validado cuando habilitemos el checkout con descuento.
+        // De momento procesarPedido() mantiene bloqueado el pago con cupón.
+        codigoCupon: this.descuentoConsultado &&
+          this.huellaCarritoConsultado === this.huellaCarrito()
+            ? this.descuentoConsultado.codigo
+            : undefined,
         items: items.map(item => ({
           productoId: item.producto.id,
           cantidad: item.cantidad
