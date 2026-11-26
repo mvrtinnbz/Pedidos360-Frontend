@@ -1,8 +1,9 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { MsalService } from '@azure/msal-angular';
 import { AuthService } from './services/auth.service';
+import { CartService } from './services/cart.spec';
 
 @Component({
   selector: 'app-root',
@@ -25,18 +26,31 @@ import { AuthService } from './services/auth.service';
         </a>
         <nav class="nav-links">
           <a routerLink="/productos" class="nav-link">Productos</a>
-          <a routerLink="/carrito" class="nav-link">Carrito</a>
           <a routerLink="/dashboard" class="nav-link">Dashboard</a>
 
-        @if (authService.isLoggedIn()) {
-          <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
-          <a routerLink="/ordenes" class="nav-link">Mis Órdenes</a>
-          <a routerLink="/facturas" class="nav-link">Mis Facturas</a>
-          <a routerLink="/login" class="btn-login-nav session-active">Sesión iniciada</a>
-        } @else {
-          <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
-        }
-          
+          @if (authService.isLoggedIn()) {
+            <a routerLink="/perfil" class="nav-link">Mi Perfil</a>
+            <a routerLink="/ordenes" class="nav-link">Mis Órdenes</a>
+            <a routerLink="/facturas" class="nav-link">Mis Facturas</a>
+          }
+
+          <a routerLink="/carrito" class="nav-cart" [class.bump]="carritoAnimando()" aria-label="Carrito">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            @if (cartService.cantidadTotal() > 0) {
+              <span class="cart-badge">{{ cartService.cantidadTotal() }}</span>
+            }
+          </a>
+
+          @if (authService.isLoggedIn()) {
+            <a routerLink="/login" class="btn-login-nav session-active">Sesión iniciada</a>
+          } @else {
+            <a routerLink="/login" class="btn-login-nav">Iniciar Sesión</a>
+          }
         </nav>
       </div>
     </header>
@@ -100,6 +114,23 @@ export class App implements OnInit {
   protected readonly anioActual = new Date().getFullYear();
   public authService = inject(AuthService);
   private msalService = inject(MsalService);
+
+  // Carrito: contador en la barra de navegación y animación
+  protected cartService = inject(CartService);
+  protected carritoAnimando = signal(false);
+  private cantidadPrevia = this.cartService.cantidadTotal();
+
+  constructor() {
+    // Anima el carrito cada vez que aumenta la cantidad
+    effect(() => {
+      const cantidad = this.cartService.cantidadTotal();
+      if (cantidad > this.cantidadPrevia) {
+        this.carritoAnimando.set(true);
+        setTimeout(() => this.carritoAnimando.set(false), 600);
+      }
+      this.cantidadPrevia = cantidad;
+    });
+  }
 
   ngOnInit(): void {
     this.msalService.handleRedirectObservable().subscribe({

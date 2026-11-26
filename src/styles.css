@@ -787,7 +787,6 @@ body {
 .toast-notification {
   position: fixed;
   top: 20px;
-  right: 20px;
   padding: 14px 20px;
   border-radius: 10px;
   background-color: #ffffff;
@@ -802,7 +801,9 @@ body {
   font-size: 0.95rem;
   z-index: 2000;
   border-left: 5px solid var(--accent-blue);
-  animation: slideInRight 0.3s ease-out;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: toastDown 0.3s ease-out;
 }
 
 .toast-success {
@@ -1291,3 +1292,65 @@ app-root {
     flex-direction: column;
   }
 }
+
+/* ===== Carrito en la barra de navegación ===== */
+.nav-cart {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.nav-cart:visited,
+.nav-cart:hover {
+  color: #ffffff;
+}
+
+.nav-cart:hover {
+  transform: scale(1.1);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -9px;
+  right: -12px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-cart.bump {
+  animation: cartBump 0.6s ease;
+}
+
+.nav-cart.bump .cart-badge {
+  animation: badgePop 0.6s ease;
+}
+
+@keyframes cartBump {
+  0%, 100% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.25) rotate(-8deg); }
+  60% { transform: scale(0.95) rotate(4deg); }
+}
+
+@keyframes badgePop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+
+@keyframes toastDown {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CartService } from '../services/cart.spec';
 import { ProductoService, Producto } from '../services/producto.service';
 import { InteraccionService } from '../services/interaccion.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-productos',
@@ -146,9 +147,11 @@ import { InteraccionService } from '../services/interaccion.service';
 })
 export class Productos implements OnInit {
   private cartService = inject(CartService);
+  private authService = inject(AuthService);
   private productoService = inject(ProductoService);
   private router = inject(Router);
   private interaccionService = inject(InteraccionService);
+  
 
   productos = signal<Producto[]>([]);
 
@@ -163,6 +166,7 @@ export class Productos implements OnInit {
     this.cartService.agregar(producto as any);
     // Kafka: PRODUCTO_AGREGADO_CARRITO (ms-carrito)
     this.interaccionService.registrarAgregadoCarrito(producto);
+    this.authService.mostrarNotificacion(`${producto.nombre} agregado al carrito`, 'success');
   }
 
   verDetalle(id: number): void {
