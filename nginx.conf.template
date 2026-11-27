@@ -1,0 +1,30 @@
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Cada microservicio se alcanza por su IP privada (no cambia al apagar el lab)
+    location /api/productos      { proxy_pass http://${PRODUCTOS_HOST}:8081; }
+    location /api/carrito        { proxy_pass http://${CARRITO_HOST}:8082; }
+    location /api/profile        { proxy_pass http://${LOGIN_HOST}:8083; }
+    location /api/ordenes        { proxy_pass http://${ORDERS_HOST}:8084; }
+    location /api/notificaciones { proxy_pass http://${NOTIFICACIONES_HOST}:8085; }
+    location /api/facturas       { proxy_pass http://${FACTURACION_HOST}:8086; }
+    location /api/pagos          { proxy_pass http://${PAGO_HOST}:8087; }
+    location /api/analytics      { proxy_pass http://${ANALYTICS_HOST}:8088; }
+    location /api/cupones        { proxy_pass http://${CUPONES_HOST}:8089; }
+
+    # WebSocket del dashboard
+    location /ws/metricas {
+        proxy_pass http://${ANALYTICS_HOST}:8088;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 3600s;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
